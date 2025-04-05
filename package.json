@@ -4,22 +4,20 @@
   "private": true,
   "scripts": {
     "build": "turbo run build",
-    "dev": "turbo run dev --parallel",
+    "dev": "turbo run dev",
     "lint": "turbo run lint",
-    "format": "prettier --write \"**/*.{ts,tsx,md}\"",
+    "check": "biome check --write .",
     "changeset": "changeset",
     "version-package": "changeset version",
     "publish-package": "turbo run build lint --filter=example^... && changeset publish"
   },
   "devDependencies": {
-    "@changesets/cli": "^2.26.1",
-    "@wojtekolek/eslint-config": "^2.0.11",
-    "prettier": "^2.8.7",
-    "turbo": "1.9.3"
+    "@biomejs/biome": "1.9.4",
+    "@changesets/cli": "^2.28.1",
+    "turbo": "2.5.0"
   },
+  "packageManager": "pnpm@10.6.0",
   "engines": {
-    "pnpm": ">=8.0.0",
-    "node": ">=16.0.0"
-  },
-  "packageManager": "pnpm@8.2.0"
+    "node": ">=22"
+  }
 }

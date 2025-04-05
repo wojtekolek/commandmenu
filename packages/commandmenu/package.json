@@ -1,30 +1,42 @@
 {
   "name": "commandmenu",
-  "version": "0.2.0",
+  "version": "0.5.0",
+  "author": "Wojtek Olek",
+  "license": "MIT",
+  "keywords": ["command", "menu", "react", "nextjs"],
+  "files": ["dist", "package.json"],
+  "exports": {
+    ".": {
+      "require": "./dist/index.js",
+      "import": "./dist/index.mjs",
+      "types": "./dist/index.d.ts"
+    }
+  },
   "main": "./dist/index.js",
   "module": "./dist/index.mjs",
   "types": "./dist/index.d.ts",
-  "sideEffects": false,
-  "license": "MIT",
   "publishConfig": {
     "access": "public"
   },
   "scripts": {
-    "build": "tsup src/index.ts --format esm,cjs --dts --external react",
-    "dev": "tsup src/index.ts --format esm,cjs --watch --dts --external react",
-    "lint": "TIMING=1 eslint src/**/*.ts* ",
+    "build": "tsup src/index.ts",
+    "dev": "tsup src/index.ts --watch",
     "clean": "rm -rf .turbo && rm -rf node_modules && rm -rf dist"
   },
-  "files": [
-    "dist/**"
-  ],
   "devDependencies": {
-    "@types/react": "^18.0.37",
-    "@types/react-dom": "^18.0.11",
-    "@wojtekolek/eslint-config": "^2.0.11",
-    "eslint": "^8.38.0",
-    "react": "18.2.0",
-    "tsup": "^6.7.0",
-    "typescript": "^5.0.4"
+    "@types/react": "^19.1.0",
+    "@types/react-dom": "^19.1.1",
+    "react": "^19.1.0",
+    "tsup": "^8.4.0",
+    "typescript": "^5.8.3"
+  },
+  "peerDependencies": {
+    "react": "^19.1.0",
+    "typescript": ">=5.0.0"
+  },
+  "peerDependenciesMeta": {
+    "typescript": {
+      "optional": true
+    }
   }
 }

@@ -1,4 +1,56 @@
-import { MouseEvent, ReactNode, RefObject, KeyboardEventHandler, ChangeEventHandler } from 'react';
+import { ElementType, KeyboardEventHandler, ChangeEventHandler, RefObject, PointerEvent, ReactNode, MouseEvent } from 'react';
+
+type Config = {
+    id: string;
+    icon?: ElementType;
+    label: string;
+    shortcut?: string;
+    description?: string;
+    disabled?: boolean;
+    onSelect: () => void;
+};
+type Group<TConfig extends Config[]> = {
+    id: string;
+    label: string;
+    items: TConfig[number]["id"][];
+};
+type PreparedItem = {
+    isSelected: boolean;
+    ref: RefObject<HTMLLIElement | null> | null;
+    id: string;
+    label: string;
+    shortcut?: string;
+    icon?: ElementType;
+    description: string | undefined;
+    onClick: (() => void) | undefined;
+    onPointerMove: (event: PointerEvent<HTMLLIElement>) => void;
+};
+type PreparedGroup = {
+    id: string;
+    label: string;
+    items: PreparedItem[];
+};
+type UseCommandMenuReturn = {
+    menuProps: {
+        onKeyDown: KeyboardEventHandler<HTMLDivElement>;
+    };
+    searchProps: {
+        value: string;
+        onChange: ChangeEventHandler<HTMLInputElement>;
+    };
+};
+type CommonArguments<TConfig extends Config[]> = {
+    config: TConfig;
+    onKeyDown?: KeyboardEventHandler<HTMLElement>;
+};
+declare function useCommandMenu<TConfig extends Config[]>(args: {
+    groups: Group<TConfig>[];
+} & CommonArguments<TConfig>): UseCommandMenuReturn & {
+    list: PreparedGroup[];
+};
+declare function useCommandMenu<TConfig extends Config[]>(args: CommonArguments<TConfig>): UseCommandMenuReturn & {
+    list: PreparedItem[];
+};
 
 type ItemCommonConfigData = {
     id: string;
@@ -42,32 +94,7 @@ type ListGroupData = {
     icon?: never;
     description?: never;
 };
-type ListData = ListGroupData[] | ListItemData[];
-type MenuProps = {
-    ref: RefObject<HTMLDivElement>;
-    onKeyDown: KeyboardEventHandler<HTMLDivElement>;
-};
-type SearchProps = {
-    autoFocus: boolean;
-    placeholder: string;
-    value?: string;
-    ref: RefObject<HTMLInputElement>;
-    onChange: ChangeEventHandler<HTMLInputElement>;
-};
-
-type UseCommandMenuProps = {
-    config: ConfigData;
-    searchPlaceholder?: string;
-};
-type UseCommandMenuReturn = {
-    selectedItem?: string;
-    selectedItemRef: RefObject<HTMLLIElement> | null;
-    menuProps: MenuProps;
-    searchProps: SearchProps;
-    list: ListData;
-};
-declare const useCommandMenu: ({ config, searchPlaceholder, }: UseCommandMenuProps) => UseCommandMenuReturn;
 
 declare const isGroupItem: (itemToCheck: ListGroupData | ListItemData) => itemToCheck is ListGroupData;
 
-export { ConfigData, ItemConfigData, ItemsGroupConfigData, ListItemData, isGroupItem, useCommandMenu };
+export { type ConfigData, type ItemConfigData, type ItemsGroupConfigData, type ListItemData, isGroupItem, useCommandMenu };

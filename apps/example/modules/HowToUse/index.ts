@@ -1,1 +1,0 @@
-export { HowToUse } from "./HowToUse";

@@ -1,330 +1,252 @@
-var __defProp = Object.defineProperty;
-var __defProps = Object.defineProperties;
-var __getOwnPropDescs = Object.getOwnPropertyDescriptors;
-var __getOwnPropSymbols = Object.getOwnPropertySymbols;
-var __hasOwnProp = Object.prototype.hasOwnProperty;
-var __propIsEnum = Object.prototype.propertyIsEnumerable;
-var __defNormalProp = (obj, key, value) => key in obj ? __defProp(obj, key, { enumerable: true, configurable: true, writable: true, value }) : obj[key] = value;
-var __spreadValues = (a, b) => {
-  for (var prop in b || (b = {}))
-    if (__hasOwnProp.call(b, prop))
-      __defNormalProp(a, prop, b[prop]);
-  if (__getOwnPropSymbols)
-    for (var prop of __getOwnPropSymbols(b)) {
-      if (__propIsEnum.call(b, prop))
-        __defNormalProp(a, prop, b[prop]);
-    }
-  return a;
-};
-var __spreadProps = (a, b) => __defProps(a, __getOwnPropDescs(b));
-var __objRest = (source, exclude) => {
-  var target = {};
-  for (var prop in source)
-    if (__hasOwnProp.call(source, prop) && exclude.indexOf(prop) < 0)
-      target[prop] = source[prop];
-  if (source != null && __getOwnPropSymbols)
-    for (var prop of __getOwnPropSymbols(source)) {
-      if (exclude.indexOf(prop) < 0 && __propIsEnum.call(source, prop))
-        target[prop] = source[prop];
-    }
-  return target;
-};
-
 // src/useCommandMenu.ts
-import { useEffect, useLayoutEffect as useLayoutEffectBase, useRef, useState } from "react";
-
-// src/utils.ts
-var isConfigWithGroups = (config) => {
-  var _a;
-  return ((_a = config.at(0)) == null ? void 0 : _a.groupItems) !== void 0;
-};
-var isListDataWithGroups = (config) => {
-  var _a;
-  return ((_a = config.at(0)) == null ? void 0 : _a.groupItems) !== void 0;
-};
-var prepareListOption = (config, setSelectedItem, goToNested) => config.map(({ id, label, icon, description, onSelect, items, placeholder }) => {
-  const isConfigWithNestedData = !!(items == null ? void 0 : items.length);
-  return {
-    id,
-    label,
-    icon,
-    description,
-    onPointerMove: () => setSelectedItem({
-      id,
-      isConfigWithNestedData
-    }),
-    onClick: isConfigWithNestedData ? () => goToNested(id) : onSelect,
-    isGroup: void 0,
-    placeholder,
-    items: (items == null ? void 0 : items.length) ? prepareListOption(items, setSelectedItem, goToNested) : void 0
-  };
-});
-var getListData = (config, setSelectedItem, goToNested) => {
-  if (isConfigWithGroups(config)) {
-    return config.map(({ id, label, groupItems }) => ({
-      id,
-      label,
-      isGroup: true,
-      groupItems: prepareListOption(groupItems, setSelectedItem, goToNested)
-    }));
-  }
-  return prepareListOption(config, setSelectedItem, goToNested);
-};
-var getFirstOption = (config) => {
-  var _a;
-  const INITIAL_INDEX = 0;
-  if (isConfigWithGroups(config)) {
-    const item2 = (_a = config.at(INITIAL_INDEX)) == null ? void 0 : _a.groupItems.at(INITIAL_INDEX);
-    return {
-      id: item2.id,
-      isConfigWithNestedData: true
-    };
-  }
-  const item = config.at(INITIAL_INDEX);
-  return {
-    id: item.id,
-    isConfigWithNestedData: false
-  };
-};
-var getItemsOrder = (preparedConfig) => {
-  if (isListDataWithGroups(preparedConfig)) {
-    return preparedConfig.flatMap(
-      ({ groupItems }) => groupItems.flatMap(({ id, items }) => ({
-        id,
-        isConfigWithNestedData: !!items
-      }))
-    );
-  }
-  return preparedConfig.flatMap(({ id, items }) => ({
-    id,
-    isConfigWithNestedData: !!(items == null ? void 0 : items.length)
-  }));
-};
-var getFilteredList = (list, searchValue) => {
-  if (isListDataWithGroups(list)) {
-    const fillteredItems = list.map((_a) => {
-      var _b = _a, { groupItems } = _b, data3 = __objRest(_b, ["groupItems"]);
-      return __spreadProps(__spreadValues({}, data3), {
-        groupItems: groupItems == null ? void 0 : groupItems.filter(
-          ({ label }) => label.toLowerCase().includes(searchValue.toLowerCase())
-        )
-      });
-    });
-    const data2 = fillteredItems.filter(({ groupItems }) => groupItems == null ? void 0 : groupItems.length);
-    return {
-      data: data2,
-      itemsOrder: getItemsOrder(data2)
-    };
-  }
-  const data = list.filter(({ label }) => label.toLowerCase().includes(searchValue.toLowerCase()));
-  return {
-    data,
-    itemsOrder: getItemsOrder(data)
-  };
-};
-var getPropByPath = (object, path, defaultValue) => {
-  if (object && path.length)
-    return getPropByPath(object[path.shift()], path, defaultValue);
-  return object === void 0 ? defaultValue : object;
-};
-var findIndexes = (data, selectedItemId) => data.flatMap(({ id, isGroup, groupItems }, index) => {
-  if (isGroup && groupItems.length) {
-    const itemIndex = groupItems.findIndex(({ id: id2 }) => id2 === selectedItemId);
-    return itemIndex > -1 ? [index, itemIndex] : [];
-  } else if (id === selectedItemId) {
-    return [index];
-  }
-  return [];
-});
-var isGroupItem = (itemToCheck) => Array.isArray(itemToCheck.groupItems);
-
-// src/useCommandMenu.ts
-var useLayoutEffect = typeof window === "undefined" ? useEffect : useLayoutEffectBase;
-var SEARCH_PLACEHOLDER = "Search for commands...";
+import {
+  useCallback,
+  useEffect,
+  useLayoutEffect,
+  useMemo,
+  useRef,
+  useState
+} from "react";
 var DOWN_KEY = "ArrowDown";
 var UP_KEY = "ArrowUp";
 var ENTER_KEY = "Enter";
-var BACK_KEY = "Backspace";
-var getCurrentList = (preparedConfig) => ({
-  preparedConfig,
-  data: preparedConfig,
-  itemsOrder: getItemsOrder(preparedConfig),
-  configLevelKey: []
-});
-var getInitialData = (config, setSelectedItem, goToNested) => {
-  const preparedConfig = getListData(config, setSelectedItem, goToNested);
+var getFirstOption = (config) => config.at(0);
+var getNewItem = (config, directionType, currentItem) => {
+  const index = currentItem?.index ?? 0;
+  const maxIndex = config.length - 1;
+  const newIndex = directionType === UP_KEY ? index - 1 : index + 1;
+  const isNewIndexValid = directionType === UP_KEY ? newIndex >= 0 : newIndex <= maxIndex;
+  if (!isNewIndexValid) return currentItem;
+  const newItem = config.at(newIndex);
+  return newItem ?? currentItem;
+};
+var getUniqueId = (id) => `${id}_${crypto.randomUUID()}`;
+var getList = (config) => config.map((itemData, index) => ({ ...itemData, index }));
+var getKeyForShortcuts = ({ shiftKey, code }) => {
+  const key = code.replace("Key", "");
+  let value = "";
+  if (shiftKey) {
+    value = value.concat("\u21E7").concat(" ");
+  }
+  return value.concat(key);
+};
+var getShortcuts = (items) => {
+  const itemsWithShortcut = items.filter(({ shortcut }) => shortcut).map(({ shortcut, onSelect }) => [shortcut, onSelect]);
+  return Object.fromEntries(itemsWithShortcut);
+};
+var getLocalState = ({
+  config,
+  groups
+}) => {
+  if (Array.isArray(groups)) {
+    const groupsWithIds = groups.map(({ items, ...restData }) => {
+      const newItems = items.map((itemId) => {
+        const newItem = config.find(({ id }) => itemId === id);
+        if (!newItem) return void 0;
+        return {
+          ...newItem,
+          id: getUniqueId(itemId)
+        };
+      }).filter((item) => item !== void 0);
+      return {
+        ...restData,
+        items: newItems
+      };
+    });
+    const list = groupsWithIds.flatMap(({ items }) => items);
+    const preparedList2 = getList(list);
+    const shortcuts2 = getShortcuts(preparedList2);
+    return {
+      initialConfig: config,
+      shortcuts: shortcuts2,
+      list: preparedList2,
+      initialList: preparedList2,
+      groups: groupsWithIds.map(({ items, ...itemData }) => ({
+        ...itemData,
+        items: items.map(({ id }) => id)
+      }))
+    };
+  }
+  const preparedList = getList(config);
+  const shortcuts = getShortcuts(preparedList);
   return {
-    preparedConfig,
-    currentList: getCurrentList(preparedConfig)
+    initialConfig: config,
+    shortcuts,
+    list: preparedList,
+    initialList: preparedList,
+    groups: void 0
   };
 };
-var useCommandMenu = ({
+function useCommandMenu({
   config,
-  searchPlaceholder = SEARCH_PLACEHOLDER
-}) => {
-  const [selectedItem, setSelectedItem] = useState(
-    getFirstOption(config)
-  );
-  const goToNested = (passedItemId) => handleGoToNestedItems(passedItemId);
-  const state = useRef(getInitialData(config, setSelectedItem, goToNested));
-  const getState = () => state.current;
-  const setCurrentListState = (newCurrentListData) => state.current.currentList = __spreadValues(__spreadValues({}, state.current.currentList), newCurrentListData);
-  const listRef = useRef(null);
-  const searchRef = useRef(null);
+  groups,
+  onKeyDown
+}) {
+  const state = useRef(getLocalState({ config, groups }));
+  const [selectedItem, setSelectedItem] = useState(getFirstOption(state.current.list));
+  const [searchQuery, setSearchQuery] = useState("");
   const selectedItemRef = useRef(null);
+  const getState = () => state.current;
+  const setState = useCallback((newState) => {
+    state.current = {
+      ...state.current,
+      ...newState
+    };
+  }, []);
+  useEffect(() => {
+    const currentState = getState();
+    if (JSON.stringify(config) !== JSON.stringify(currentState.initialConfig)) {
+      const newState = getLocalState({ config, groups });
+      setState(newState);
+      setSelectedItem(getFirstOption(newState.list));
+      setSearchQuery("");
+    }
+  }, [config, groups]);
   useLayoutEffect(() => {
-    if (listRef.current && searchRef.current && selectedItemRef.current) {
-      const handleScrollSelectedIntoView = (selectedOptionRef) => {
-        var _a, _b, _c, _d, _e, _f, _g;
-        const listDimensions = listRef.current.getBoundingClientRect();
-        const searchDimensions = searchRef.current.getBoundingClientRect();
-        const selectedOptionDimensions = (_a = selectedItemRef.current) == null ? void 0 : _a.getBoundingClientRect();
-        const shouldScroll = selectedOptionDimensions && (selectedOptionDimensions.top < listDimensions.top + searchDimensions.height || selectedOptionDimensions.bottom > listDimensions.bottom);
-        if (((_c = (_b = selectedItemRef.current) == null ? void 0 : _b.parentElement) == null ? void 0 : _c.firstChild) === selectedItemRef.current) {
-          return (_f = (_e = (_d = selectedItemRef.current) == null ? void 0 : _d.closest("#group")) == null ? void 0 : _e.firstElementChild) == null ? void 0 : _f.scrollIntoView({
-            block: "nearest"
-          });
-        } else if (shouldScroll) {
-          return (_g = selectedOptionRef.current) == null ? void 0 : _g.scrollIntoView({
-            block: "nearest"
-          });
-        }
-      };
-      handleScrollSelectedIntoView(selectedItemRef);
+    const handleScrollSelectedIntoView = () => {
+      const item = selectedItemRef.current;
+      const isFirstElementInGroup = item?.parentNode?.firstElementChild === item;
+      if (isFirstElementInGroup) {
+        const groupLabel = item?.parentElement?.previousElementSibling;
+        groupLabel?.scrollIntoView({ block: "nearest" });
+      } else if (item) {
+        item.scrollIntoView({ block: "nearest" });
+      }
+    };
+    if (selectedItem && selectedItemRef.current) {
+      handleScrollSelectedIntoView();
     }
   }, [selectedItem]);
-  const handleSearchChange = (event) => {
-    const { value } = event.target;
-    const newData = getFilteredList(getState().currentList.preparedConfig, value);
-    setCurrentListState({
-      data: newData.data,
-      itemsOrder: newData.itemsOrder,
-      searchValue: value
-    });
-    const newSelectedOption = newData.itemsOrder.at(0);
-    return setSelectedItem(newSelectedOption);
-  };
-  const handleGoBackFromNested = () => {
-    const getPreviousKey = (levelKey) => {
-      const lastItemsKeyIndex = levelKey.lastIndexOf("items");
-      if (lastItemsKeyIndex) {
-        const preparedKey = levelKey.slice(0, lastItemsKeyIndex);
-        const lastGroupsItemsKeyIndex = levelKey.lastIndexOf("groupItems");
-        return lastGroupsItemsKeyIndex === preparedKey.length - 1 ? preparedKey.slice(0, lastGroupsItemsKeyIndex - 1) : preparedKey;
+  const handleSearch = useCallback(
+    (event) => {
+      const { value } = event.target;
+      const { initialList } = getState();
+      const filteredList = initialList.filter(({ label }) => label.toLocaleLowerCase().includes(value.toLocaleLowerCase())).map((itemData, index) => ({ ...itemData, index }));
+      setState({
+        list: filteredList,
+        shortcuts: getShortcuts(filteredList)
+      });
+      setSelectedItem(getFirstOption(filteredList));
+      setSearchQuery(value);
+    },
+    [setState]
+  );
+  const handleResetState = useCallback(() => {
+    const { initialList } = getState();
+    setSearchQuery("");
+    setState({ list: initialList, shortcuts: getShortcuts(initialList) });
+    setSelectedItem(getFirstOption(initialList));
+  }, [setState]);
+  const handleSelect = useCallback(
+    (onSelect) => () => {
+      if (typeof onSelect === "function") {
+        onSelect();
+      } else {
+        selectedItemRef.current?.click();
       }
-      return levelKey;
-    };
-    const baseState = getState();
-    const { configLevelKey } = baseState.currentList;
-    const arrayKey = getPreviousKey(configLevelKey);
-    const data = getPropByPath(baseState, [...arrayKey], {});
-    const listData = arrayKey.length > 1 ? data.items : data;
-    const newItemsOrder = getItemsOrder(listData);
-    setCurrentListState({
-      data: listData,
-      itemsOrder: newItemsOrder,
-      preparedConfig: listData,
-      configLevelKey: arrayKey,
-      searchPlaceholder: data.placeholder
-    });
-    const newSelectedOption = newItemsOrder.at(0);
-    return setSelectedItem(newSelectedOption);
-  };
-  const handleGoToNestedItems = (passedItemId) => {
-    const baseState = getState();
-    const { preparedConfig, configLevelKey } = baseState.currentList;
-    const getArrayKey = (config2, levelKey) => {
-      const indexes = findIndexes(config2, passedItemId);
-      if (!(levelKey == null ? void 0 : levelKey.length) || levelKey && levelKey.length <= 1) {
-        const [groupIndex, selectedItemIndex2] = indexes;
-        return ["preparedConfig", groupIndex, "groupItems", selectedItemIndex2];
-      }
-      const [selectedItemIndex] = indexes;
-      return [...levelKey, "items", selectedItemIndex];
-    };
-    const arrayKey = getArrayKey(preparedConfig, configLevelKey);
-    const data = getPropByPath(baseState, [...arrayKey], {});
-    const newItemsOrder = getItemsOrder(data.items);
-    setCurrentListState({
-      data: data.items,
-      itemsOrder: newItemsOrder,
-      preparedConfig: data.items,
-      configLevelKey: arrayKey,
-      searchPlaceholder: data.placeholder,
-      searchValue: void 0
-    });
-    const newSelectedOption = newItemsOrder.at(0);
-    return setSelectedItem(newSelectedOption);
-  };
-  const handleSelect = (optionRef) => {
-    var _a;
-    return (_a = optionRef.current) == null ? void 0 : _a.click();
-  };
-  const handleKeyPress = (direction) => {
-    const { itemsOrder } = getState().currentList;
-    const selectedItemIndex = itemsOrder.findIndex(({ id }) => id === (selectedItem == null ? void 0 : selectedItem.id));
-    const getNextItemIndex = () => {
-      if (selectedItemIndex < itemsOrder.length - 1 && direction === "down") {
-        return selectedItemIndex + 1;
-      }
-      if (selectedItemIndex > 0 && direction === "up") {
-        return selectedItemIndex - 1;
-      }
-      return selectedItemIndex;
-    };
-    const newSelectedItemIndex = getNextItemIndex();
-    const newSelectedItem = itemsOrder.at(newSelectedItemIndex);
-    return setSelectedItem(newSelectedItem);
-  };
-  const handleListKeyDown = (event) => {
-    switch (event.key) {
-      case DOWN_KEY: {
-        event.preventDefault();
-        return handleKeyPress("down");
-      }
-      case UP_KEY: {
-        event.preventDefault();
-        return handleKeyPress("up");
-      }
-      case ENTER_KEY: {
-        event.preventDefault();
-        return handleSelect(selectedItemRef);
-      }
-      case BACK_KEY: {
-        const { configLevelKey } = getState().currentList;
-        if (!event.target.value.length && configLevelKey.length > 1) {
-          return handleGoBackFromNested();
+      handleResetState();
+    },
+    [handleResetState]
+  );
+  const handleKeyPress = useCallback(
+    (type) => {
+      const { list } = getState();
+      const nextItem = getNewItem(list, type, selectedItem);
+      setSelectedItem(nextItem);
+    },
+    [selectedItem]
+  );
+  const handleItemsShortcuts = useCallback(
+    (event) => {
+      const { shiftKey, ctrlKey, metaKey, code } = event;
+      const shortcutsMap = getState().shortcuts;
+      if ((metaKey || ctrlKey) && shortcutsMap) {
+        const preparedKey = getKeyForShortcuts({ shiftKey, code });
+        const selectHandler = shortcutsMap[preparedKey];
+        if (typeof selectHandler === "function") {
+          event.preventDefault();
+          event.stopPropagation();
+          const handler = handleSelect(selectHandler);
+          handler();
         }
       }
-    }
-  };
-  const getMenuProps = () => ({
-    ref: listRef,
-    onKeyDown: handleListKeyDown,
-    onClick: () => {
-      var _a;
-      (_a = searchRef.current) == null ? void 0 : _a.focus();
-    }
-  });
-  const getSearchProps = () => {
-    const { searchPlaceholder: listSearchPlaceholder, searchValue } = getState().currentList;
+    },
+    [handleSelect]
+  );
+  const handleListKeyDown = useCallback(
+    (event) => {
+      handleItemsShortcuts(event);
+      onKeyDown?.(event);
+      if (!event.defaultPrevented) {
+        switch (event.key) {
+          case DOWN_KEY: {
+            event.preventDefault();
+            handleKeyPress(DOWN_KEY);
+            break;
+          }
+          case UP_KEY: {
+            event.preventDefault();
+            handleKeyPress(UP_KEY);
+            break;
+          }
+          case ENTER_KEY: {
+            if (!event.nativeEvent.isComposing) {
+              event.preventDefault();
+              handleSelect()();
+            }
+          }
+        }
+      }
+    },
+    [handleItemsShortcuts, handleKeyPress, handleSelect, onKeyDown]
+  );
+  const menuProps = useMemo(
+    () => ({
+      onKeyDown: handleListKeyDown
+    }),
+    [handleListKeyDown]
+  );
+  const searchProps = useMemo(
+    () => ({
+      value: searchQuery,
+      onChange: handleSearch
+    }),
+    [handleSearch, searchQuery]
+  );
+  const preparedList = getState().list.map((itemData) => {
+    const isSelected = itemData.id === selectedItem?.id;
     return {
-      autoFocus: true,
-      placeholder: listSearchPlaceholder != null ? listSearchPlaceholder : searchPlaceholder,
-      value: searchValue != null ? searchValue : "",
-      ref: searchRef,
-      onChange: handleSearchChange
+      isSelected,
+      ref: isSelected ? selectedItemRef : null,
+      id: itemData.id,
+      label: itemData.label,
+      icon: itemData.icon,
+      shortcut: itemData.shortcut,
+      description: itemData.description,
+      disabled: itemData.disabled,
+      onClick: itemData.disabled ? void 0 : handleSelect(itemData.onSelect),
+      onPointerMove: () => setSelectedItem(itemData)
     };
-  };
+  });
+  const preparedGroups = useMemo(() => {
+    const groupsData = getState().groups;
+    return Array.isArray(groupsData) ? groupsData.map(({ id, items, label }) => ({
+      id,
+      label,
+      items: preparedList.filter(({ id: id2 }) => items.includes(id2))
+    })).filter(({ items }) => items.length) : void 0;
+  }, [preparedList]);
   return {
-    selectedItem: selectedItem == null ? void 0 : selectedItem.id,
-    selectedItemRef,
-    menuProps: getMenuProps(),
-    searchProps: getSearchProps(),
-    list: getState().currentList.data
+    list: preparedGroups ?? preparedList,
+    menuProps,
+    searchProps
   };
-};
+}
+
+// src/utils.ts
+var isGroupItem = (itemToCheck) => Array.isArray(itemToCheck.groupItems);
 export {
   isGroupItem,
   useCommandMenu
 };
+//# sourceMappingURL=index.mjs.map
