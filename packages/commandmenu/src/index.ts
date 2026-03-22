@@ -1,3 +1,8 @@
-export { useCommandMenu } from "./useCommandMenu";
-export type { ItemsGroupConfigData, ItemConfigData, ConfigData, ListItemData } from "./types";
-export { isGroupItem } from "./utils";
+export type {
+  Config,
+  Group,
+  PreparedGroup,
+  PreparedItem,
+  Selection,
+} from "./types";
+export { isGroupList, useCommandMenu } from "./useCommandMenu";

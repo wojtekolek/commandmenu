@@ -1,210 +1,265 @@
 # CommandMenu
 
-This package offers a hook for creating a customized command menu.
-It returns an object that includes properties for every element in the menu, such as the menu itself, the search input, and a list of all the necessary properties for each menu item which enables you to easily build a command menu tailored to your specific needs.
+A headless React hook for building command menus. It handles search, keyboard navigation, shortcuts, and selection — you bring your own UI.
 
 Demo: [commandmenu.wojtekolek.com](https://commandmenu.wojtekolek.com/)
 
-### Installation
+## Installation
 
 ```bash
-# npm
 npm i commandmenu
-
-# yarn
+# or
 yarn add commandmenu
-
-# pnpm
+# or
 pnpm add commandmenu
 ```
 
-### Get started
+## Quick start
 
-In order to fully utilize the functionality of this package, you must pass a configuration array that includes all the items you wish to display in the menu. A basic example of this configuration array might look something like the following:
+Define your config and pass it to the hook. Spread the returned props onto your elements.
 
-```typescript
-// config.ts
-import type { ConfigData } from "commandmenu";
-import type { IconName } from "components/Icon";
+```tsx
+import { type Config, useCommandMenu } from "commandmenu";
 
-const config: ConfigData<IconName> = [
+const config = [
   {
-    id: 'github',
-    label: 'Github',
-    icon: 'Github',
-    description: 'Check github',
-    onSelect: () => console.log('github selected')
+    id: "docs",
+    label: "Documentation",
+    description: "Read the docs",
+    onSelect: () => console.log("docs"),
   },
   {
-    id: 'spotifyPlay',
-    label: 'Spotify play',
-    icon: 'Play',
-    description: 'Play songs on Spotify',
-    onSelect: () => console.log('spotify play selected')
+    id: "search",
+    label: "Search",
+    shortcut: "F",
+    onSelect: () => console.log("search"),
   },
-  {
-    id: 'spotifyNext',
-    label: 'Spotify next',
-    icon: 'Next',
-    description: 'Next song on Spotify',
-    onSelect: () => console.log('spotify next selected')
-  },
-]
-```
+] as const satisfies Config[];
 
-```typescript
-// CommandMenu.tsx
-import { useCommandMenu } from "commandmenu";
-import { config } from "./config";
-  
-const { selectedItem, selectedItemRef, menuProps, searchProps, list } = 
-  useCommandMenu({ config })
-```
+const CommandMenu = () => {
+  const { menuProps, searchProps, list, selection } = useCommandMenu({ config });
 
-Utilizing the props data returned by the hook is a straightforward process. Simply spread the `menuProps` and `searchProps`, then map through the list in order to render all the necessary menu items.
-
-```typescript
-// CommandMenu.tsx
-return (
-  <CommandMenu {...menuProps}>
-    <SearchInput {...searchProps} />
-    <CommandMenuList>
-      {list.map(({ id, label, icon, description }) => {
-        const isSelected = id === selectedItem
-        return (
-          <CommandMenuListItemWrapper
-            key={id}
-            ref={isSelected ? selectedItemRef : null}
-            isSelected={isSelected}
-          >
-            {icon && <CommandMenuListItemIcon name={icon} />}
-            <CommandMenuListItemLabel>{label}</CommandMenuListItemLabel>
-            {description && (
-              <CommandMenuListItemDescription>
-                {description}
-              </CommandMenuListItemDescription>
-            )}
-          </CommandMenuListItemWrapper>
-        )
-      })}
-    </CommandMenuList>
-  </CommandMenu>
-)
-```
-
-#### Grouping
-
-If you wish to group items in your menu, it's easy to do so by wrapping them in a group object configuration. Once you've done this, you're ready to go!
-
-```typescript
-// config.ts
-{
-  id: 'favs',
-  label: 'Favorites',
-  groupItems: [
-    {
-      id: 'github',
-      label: 'Github',
-      icon: 'Github',
-      description: 'Check our Github',
-      onSelect: () => console.log('open Github')
-    },
-    {
-      id: 'twitter',
-      label: 'Twitter',
-      icon: 'Twitter',
-      description: 'Check our Twitter',
-      onSelect: () => console.log('open Twitter')
-    },
-     {
-      id: 'instagram',
-      label: 'Instagram',
-      icon: 'Instagram',
-      description: 'Check our Instagram',
-      onSelect: () => console.log('open Instagram')
-    },
-  ]
-},
-```
-
-Once you've updated the command menu configuration, the final step is to simply render the group elements inside another list. This can be accomplished using code similar to the following:
-
-```typescript
-// CommandMenu.tsx
-return (
-  <CommandMenu {...menuProps}>
-    <SearchInput {...searchProps} />
-    <CommandMenuList>
-      {list.map((item) => {
-        if (isGroupItem(item)) {
+  return (
+    <div {...menuProps}>
+      <input {...searchProps} placeholder="Search..." />
+      <ul>
+        {list.map((item) => {
+          const isSelected = item.id === selection.id;
           return (
-            <CommandMenuListGroupItem key={item.id} id="group">
-              <CommandMenuListGroupItemLabel>
-                {item.label}
-              </CommandMenuListGroupItemLabel>
-              <CommandMenuGroupList>
-                {item.groupItems.map((groupItem) => (
-                  <CommandMenuListItem
-                    key={groupItem.id}
-                    selectedItem={selectedItem}
-                    selectedItemRef={selectedItemRef}
-                    {...groupItem}
-                  />
-                ))}
-              </CommandMenuGroupList>
-            </CommandMenuListGroupItem>
-          )
-        }
-        return (
-          <CommandMenuListItem
-            key={item.id}
-            selectedItem={selectedItem}
-            selectedItemRef={selectedItemRef}
-            {...item}
-          />
-        )
-      })}
-    </CommandMenuList>
-  </CommandMenu>
-)
+            <li
+              key={item.id}
+              ref={isSelected ? selection.ref : null}
+              onClick={item.onClick}
+              onPointerMove={item.onPointerMove}
+              style={{ background: isSelected ? "#f0f0f0" : undefined }}
+            >
+              {item.label}
+            </li>
+          );
+        })}
+      </ul>
+    </div>
+  );
+}
 ```
 
-#### Nested menus
+## Grouping
 
-If you'd like to include multiple options related to a specific item, you can utilize nested menus. You can even add nested menus to each level, as needed. Once you've updated the configuration accordingly, this feature should work seamlessly, allowing you to take your menu functionality to the next level!
+Pass a `groups` array to organize items into sections. Each group references item IDs from your config.
+
+```tsx
+import { type Config, type Group, isGroupList, useCommandMenu } from "commandmenu";
+
+const config = [
+  { id: "home", label: "Home", onSelect: () => {} },
+  { id: "about", label: "About", onSelect: () => {} },
+  { id: "new-file", label: "New File", shortcut: "N", onSelect: () => {} },
+  { id: "settings", label: "Settings", onSelect: () => {} },
+] as const satisfies Config[];
+
+type MyConfig = typeof config;
+
+const groups: Group<MyConfig>[] = [
+  { id: "nav", label: "Navigation", items: ["home", "about"] },
+  { id: "actions", label: "Actions", items: ["new-file", "settings"] },
+];
+
+const CommandMenu = () => {
+  const { menuProps, searchProps, list, selection } = useCommandMenu({
+    config,
+    groups,
+  });
+
+  return (
+    <div {...menuProps}>
+      <input {...searchProps} placeholder="Search..." />
+      <ul>
+        {isGroupList(list) &&
+          list.map((group) => (
+            <li key={group.id}>
+              <div>{group.label}</div>
+              <ul>
+                {group.items.map((item) => {
+                  const isSelected = item.id === selection.id;
+                  return (
+                    <li
+                      key={item.id}
+                      ref={isSelected ? selection.ref : null}
+                      onClick={item.onClick}
+                      onPointerMove={item.onPointerMove}
+                    >
+                      {item.label}
+                    </li>
+                  );
+                })}
+              </ul>
+            </li>
+          ))}
+      </ul>
+    </div>
+  );
+}
+```
+
+## Nested menus
+
+The hook doesn't impose a nesting model — you control it by swapping the `config` (and optionally `groups`) when an item is selected. Use Backspace on an empty search to go back.
+
+```tsx
+import { type Config, useCommandMenu } from "commandmenu";
+import { useCallback, useMemo, useState } from "react";
+
+type MenuLevel = { label: string; config: Config[] };
+
+const CommandMenu = () => {
+  const [menuStack, setMenuStack] = useState<MenuLevel[]>([]);
+
+  const openSubmenu = useCallback((level: MenuLevel) => {
+    setMenuStack((s) => [...s, level]);
+  }, []);
+
+  const goBack = useCallback(() => {
+    setMenuStack((s) => s.slice(0, -1));
+  }, []);
+
+  const rootConfig = useMemo(
+    (): Config[] => [
+      { id: "home", label: "Home", onSelect: () => console.log("home") },
+      {
+        id: "settings",
+        label: "Settings",
+        onSelect: () =>
+          openSubmenu({
+            label: "Settings",
+            config: [
+              { id: "theme", label: "Theme", onSelect: () => console.log("theme") },
+              { id: "language", label: "Language", onSelect: () => console.log("language") },
+            ],
+          }),
+      },
+    ],
+    [openSubmenu],
+  );
+
+  const currentLevel = menuStack[menuStack.length - 1];
+  const activeConfig = currentLevel?.config ?? rootConfig;
+
+  const { menuProps, searchProps, list, selection } = useCommandMenu({
+    config: activeConfig,
+    onKeyDown: (e) => {
+      if (e.key === "Backspace" && (e.target as HTMLInputElement).value === "" && menuStack.length > 0) {
+        e.preventDefault();
+        goBack();
+      }
+    },
+  });
+
+  return (
+    <div {...menuProps}>
+      <input {...searchProps} placeholder="Search..." />
+      <ul>
+        {list.map((item) => (
+          <li key={item.id} onClick={item.onClick} onPointerMove={item.onPointerMove}>
+            {item.label}
+          </li>
+        ))}
+      </ul>
+    </div>
+  );
+}
+```
+
+## API
+
+### `useCommandMenu(args)`
+
+#### Arguments
+
+| Prop | Type | Description |
+|------|------|-------------|
+| `config` | `Config[]` | Menu items (required) |
+| `groups` | `Group[]` | Optional grouping of items by ID |
+| `asyncResultsGroup` | `AsyncResultsGroup` | Optional async-loaded items |
+| `onKeyDown` | `KeyboardEventHandler` | Custom keydown handler |
+| `onKeyUp` | `KeyboardEventHandler` | Custom keyup handler |
+| `onSearchChange` | `(query: string) => void` | Called when search query changes |
+
+#### Return value
+
+| Prop | Type | Description |
+|------|------|-------------|
+| `list` | `PreparedItem[] \| PreparedGroup[]` | Items to render (flat or grouped) |
+| `selection` | `Selection` | Current selection (`id` and `ref`) |
+| `menuProps` | `{ onKeyDown, onKeyUp }` | Spread on the menu container |
+| `searchProps` | `{ value, onChange }` | Spread on the search input |
+| `searchQuery` | `string` | Current search query |
+| `isAsyncLoading` | `boolean` | Whether async results are loading |
+
+### `isGroupList(list)`
+
+Type guard that returns `true` when the list contains `PreparedGroup[]` (i.e., groups were provided).
+
+### Types
 
 ```typescript
-// config.ts
-{
-  id: 'spotify',
-  label: 'Spotify',
-  icon: 'Music',
-  description: 'Control Spotify',
-  items: [
-    {
-      id: 'spotifyPlay',
-      label: 'Play',
-      icon: 'Play',
-      onSelect: () => console.log('spotify play selected')
-    },
-    {
-      id: 'spotifyPause',
-      label: 'Pause',
-      icon: 'Pause',
-      onSelect: () => console.log('spotify pasue selected')
-    },
-    {
-      id: 'spotifyNext',
-      label: 'Next',
-      icon: 'ArrowRight',
-      onSelect: () => console.log('spotify next selected')
-    },
-    {
-      id: 'spotifyPrevious',
-      label: 'Previous',
-      icon: 'ArrowLeft',
-      onSelect: () => console.log('spotify prev selected')
-    },
-  ]
-},
+type Config = {
+  id: string;
+  label: string;
+  icon?: ElementType;
+  shortcut?: string;
+  description?: string;
+  disabled?: boolean;
+  onSelect: () => void;
+};
+
+type Group<T extends Config[]> = {
+  id: string;
+  label: string;
+  items: T[number]["id"][];
+};
+
+type Selection = {
+  id: string | undefined;
+  ref: RefObject<HTMLLIElement | null>;
+};
+
+type PreparedItem = {
+  id: string;
+  label: string;
+  icon?: ElementType;
+  shortcut?: string;
+  description?: string;
+  onClick: (() => void) | undefined;
+  onPointerMove: () => void;
+};
+
+type PreparedGroup = {
+  id: string;
+  label: string;
+  items: PreparedItem[];
+};
 ```
+
+## License
+
+MIT

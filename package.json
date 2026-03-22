@@ -4,22 +4,26 @@
   "private": true,
   "scripts": {
     "build": "turbo run build",
-    "dev": "turbo run dev --parallel",
+    "dev": "turbo run dev",
     "lint": "turbo run lint",
-    "format": "prettier --write \"**/*.{ts,tsx,md}\"",
+    "lint:fix": "biome check --write .",
+    "test": "turbo run test",
+    "test:watch": "turbo run test:watch",
     "changeset": "changeset",
     "version-package": "changeset version",
     "publish-package": "turbo run build lint --filter=example^... && changeset publish"
   },
   "devDependencies": {
-    "@changesets/cli": "^2.26.1",
-    "@wojtekolek/eslint-config": "^2.0.11",
-    "prettier": "^2.8.7",
-    "turbo": "1.9.3"
+    "@biomejs/biome": "2.4.8",
+    "@changesets/cli": "2.30.0",
+    "@testing-library/dom": "^10.4.1",
+    "@testing-library/react": "^16.3.2",
+    "jsdom": "^29.0.1",
+    "turbo": "2.8.20",
+    "vitest": "^4.1.0"
   },
+  "packageManager": "pnpm@10.32.1",
   "engines": {
-    "pnpm": ">=8.0.0",
-    "node": ">=16.0.0"
-  },
-  "packageManager": "pnpm@8.2.0"
+    "node": ">=24.14"
+  }
 }

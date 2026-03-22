@@ -1,0 +1,17 @@
+---
+import Header from "../components/Header.astro";
+import DefaultLayout from "../layouts/DefaultLayout.astro";
+import { Demo } from "../modules/Demo";
+import "../styles/globals.css";
+
+const Description = "Headless UI for building command menus in React.";
+const Title = `Command Menu — ${Description}`;
+---
+
+<DefaultLayout title={Title} description={Description}>
+  <Header />
+
+  <div class="grid place-items-center content-center px-4">
+    <Demo client:load />
+  </div>
+</DefaultLayout>

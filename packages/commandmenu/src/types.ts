@@ -1,79 +1,45 @@
-import type {
-  ChangeEventHandler,
-  KeyboardEventHandler,
-  MouseEvent,
-  ReactNode,
-  RefObject,
-} from "react";
+import type { ElementType, RefObject } from "react";
 
-// Config
-type ItemCommonConfigData = {
+export type Config = {
   id: string;
-  icon?: ReactNode;
+  icon?: ElementType;
   label: string;
+  shortcut?: string;
   description?: string;
+  disabled?: boolean;
+  onSelect: () => void;
 };
 
-export type ItemConfigData = ItemCommonConfigData & {
-  placeholder?: never;
-  items?: never;
-  onSelect: (event: MouseEvent<HTMLLIElement>) => void;
-};
-
-export type ItemWithNestedListConfigData = ItemCommonConfigData & {
-  onSelect?: never;
-  placeholder: string;
-  items: Array<ItemWithNestedListConfigData | ItemConfigData>;
-};
-
-export type ItemsGroupConfigData = {
+export type Group<TConfig extends Config[]> = {
   id: string;
   label: string;
-  groupItems: Array<ItemConfigData | ItemWithNestedListConfigData>;
+  items: TConfig[number]["id"][];
 };
 
-export type ConfigData = ItemsGroupConfigData[] | ItemConfigData[] | ItemWithNestedListConfigData[];
-
-// Prepared list
-export type SelectedItemData = {
-  id: string;
-  isConfigWithNestedData: boolean;
-};
-
-export type ListItemData = {
+export type AsyncResultsGroup = {
   id: string;
   label: string;
-  icon?: ReactNode;
+  items: Config[];
+  isLoading: boolean;
+};
+
+export type PreparedItem = {
+  id: string;
+  label: string;
+  shortcut?: string;
+  icon?: ElementType;
   description?: string;
+  onClick: (() => void) | undefined;
   onPointerMove: () => void;
-  onClick: (event: MouseEvent<HTMLLIElement>) => void;
-  items?: ListItemData[];
-  isGroup?: never;
-  groupItems?: never;
 };
 
-export type ListGroupData = {
+export type PreparedGroup = {
   id: string;
   label: string;
-  isGroup: boolean;
-  groupItems: ListItemData[];
-  items?: never;
-  icon?: never;
-  description?: never;
+  items: PreparedItem[];
 };
 
-export type ListData = ListGroupData[] | ListItemData[];
-
-// Return types
-export type MenuProps = {
-  ref: RefObject<HTMLDivElement>;
-  onKeyDown: KeyboardEventHandler<HTMLDivElement>;
-};
-
-export type SearchProps = {
-  autoFocus: boolean;
-  placeholder: string;
-  value?: string;
-  ref: RefObject<HTMLInputElement>;
-  onChange: ChangeEventHandler<HTMLInputElement>;
+export type Selection = {
+  id: string | undefined;
+  ref: RefObject<HTMLLIElement | null>;
 };

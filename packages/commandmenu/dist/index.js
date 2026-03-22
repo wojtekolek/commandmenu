@@ -1,37 +1,8 @@
 "use strict";
 var __defProp = Object.defineProperty;
-var __defProps = Object.defineProperties;
 var __getOwnPropDesc = Object.getOwnPropertyDescriptor;
-var __getOwnPropDescs = Object.getOwnPropertyDescriptors;
 var __getOwnPropNames = Object.getOwnPropertyNames;
-var __getOwnPropSymbols = Object.getOwnPropertySymbols;
 var __hasOwnProp = Object.prototype.hasOwnProperty;
-var __propIsEnum = Object.prototype.propertyIsEnumerable;
-var __defNormalProp = (obj, key, value) => key in obj ? __defProp(obj, key, { enumerable: true, configurable: true, writable: true, value }) : obj[key] = value;
-var __spreadValues = (a, b) => {
-  for (var prop in b || (b = {}))
-    if (__hasOwnProp.call(b, prop))
-      __defNormalProp(a, prop, b[prop]);
-  if (__getOwnPropSymbols)
-    for (var prop of __getOwnPropSymbols(b)) {
-      if (__propIsEnum.call(b, prop))
-        __defNormalProp(a, prop, b[prop]);
-    }
-  return a;
-};
-var __spreadProps = (a, b) => __defProps(a, __getOwnPropDescs(b));
-var __objRest = (source, exclude) => {
-  var target = {};
-  for (var prop in source)
-    if (__hasOwnProp.call(source, prop) && exclude.indexOf(prop) < 0)
-      target[prop] = source[prop];
-  if (source != null && __getOwnPropSymbols)
-    for (var prop of __getOwnPropSymbols(source)) {
-      if (exclude.indexOf(prop) < 0 && __propIsEnum.call(source, prop))
-        target[prop] = source[prop];
-    }
-  return target;
-};
 var __export = (target, all) => {
   for (var name in all)
     __defProp(target, name, { get: all[name], enumerable: true });
@@ -47,309 +18,153 @@ var __copyProps = (to, from, except, desc) => {
 var __toCommonJS = (mod) => __copyProps(__defProp({}, "__esModule", { value: true }), mod);
 
 // src/index.ts
-var src_exports = {};
-__export(src_exports, {
-  isGroupItem: () => isGroupItem,
+var index_exports = {};
+__export(index_exports, {
+  isGroupList: () => isGroupList,
   useCommandMenu: () => useCommandMenu
 });
-module.exports = __toCommonJS(src_exports);
+module.exports = __toCommonJS(index_exports);
 
 // src/useCommandMenu.ts
 var import_react = require("react");
-
-// src/utils.ts
-var isConfigWithGroups = (config) => {
-  var _a;
-  return ((_a = config.at(0)) == null ? void 0 : _a.groupItems) !== void 0;
-};
-var isListDataWithGroups = (config) => {
-  var _a;
-  return ((_a = config.at(0)) == null ? void 0 : _a.groupItems) !== void 0;
-};
-var prepareListOption = (config, setSelectedItem, goToNested) => config.map(({ id, label, icon, description, onSelect, items, placeholder }) => {
-  const isConfigWithNestedData = !!(items == null ? void 0 : items.length);
-  return {
-    id,
-    label,
-    icon,
-    description,
-    onPointerMove: () => setSelectedItem({
-      id,
-      isConfigWithNestedData
-    }),
-    onClick: isConfigWithNestedData ? () => goToNested(id) : onSelect,
-    isGroup: void 0,
-    placeholder,
-    items: (items == null ? void 0 : items.length) ? prepareListOption(items, setSelectedItem, goToNested) : void 0
-  };
-});
-var getListData = (config, setSelectedItem, goToNested) => {
-  if (isConfigWithGroups(config)) {
-    return config.map(({ id, label, groupItems }) => ({
-      id,
-      label,
-      isGroup: true,
-      groupItems: prepareListOption(groupItems, setSelectedItem, goToNested)
-    }));
-  }
-  return prepareListOption(config, setSelectedItem, goToNested);
-};
-var getFirstOption = (config) => {
-  var _a;
-  const INITIAL_INDEX = 0;
-  if (isConfigWithGroups(config)) {
-    const item2 = (_a = config.at(INITIAL_INDEX)) == null ? void 0 : _a.groupItems.at(INITIAL_INDEX);
-    return {
-      id: item2.id,
-      isConfigWithNestedData: true
-    };
-  }
-  const item = config.at(INITIAL_INDEX);
-  return {
-    id: item.id,
-    isConfigWithNestedData: false
-  };
-};
-var getItemsOrder = (preparedConfig) => {
-  if (isListDataWithGroups(preparedConfig)) {
-    return preparedConfig.flatMap(
-      ({ groupItems }) => groupItems.flatMap(({ id, items }) => ({
-        id,
-        isConfigWithNestedData: !!items
-      }))
-    );
-  }
-  return preparedConfig.flatMap(({ id, items }) => ({
-    id,
-    isConfigWithNestedData: !!(items == null ? void 0 : items.length)
-  }));
-};
-var getFilteredList = (list, searchValue) => {
-  if (isListDataWithGroups(list)) {
-    const fillteredItems = list.map((_a) => {
-      var _b = _a, { groupItems } = _b, data3 = __objRest(_b, ["groupItems"]);
-      return __spreadProps(__spreadValues({}, data3), {
-        groupItems: groupItems == null ? void 0 : groupItems.filter(
-          ({ label }) => label.toLowerCase().includes(searchValue.toLowerCase())
-        )
-      });
-    });
-    const data2 = fillteredItems.filter(({ groupItems }) => groupItems == null ? void 0 : groupItems.length);
-    return {
-      data: data2,
-      itemsOrder: getItemsOrder(data2)
-    };
-  }
-  const data = list.filter(({ label }) => label.toLowerCase().includes(searchValue.toLowerCase()));
-  return {
-    data,
-    itemsOrder: getItemsOrder(data)
-  };
-};
-var getPropByPath = (object, path, defaultValue) => {
-  if (object && path.length)
-    return getPropByPath(object[path.shift()], path, defaultValue);
-  return object === void 0 ? defaultValue : object;
-};
-var findIndexes = (data, selectedItemId) => data.flatMap(({ id, isGroup, groupItems }, index) => {
-  if (isGroup && groupItems.length) {
-    const itemIndex = groupItems.findIndex(({ id: id2 }) => id2 === selectedItemId);
-    return itemIndex > -1 ? [index, itemIndex] : [];
-  } else if (id === selectedItemId) {
-    return [index];
-  }
-  return [];
-});
-var isGroupItem = (itemToCheck) => Array.isArray(itemToCheck.groupItems);
-
-// src/useCommandMenu.ts
-var useLayoutEffect = typeof window === "undefined" ? import_react.useEffect : import_react.useLayoutEffect;
-var SEARCH_PLACEHOLDER = "Search for commands...";
-var DOWN_KEY = "ArrowDown";
-var UP_KEY = "ArrowUp";
-var ENTER_KEY = "Enter";
-var BACK_KEY = "Backspace";
-var getCurrentList = (preparedConfig) => ({
-  preparedConfig,
-  data: preparedConfig,
-  itemsOrder: getItemsOrder(preparedConfig),
-  configLevelKey: []
-});
-var getInitialData = (config, setSelectedItem, goToNested) => {
-  const preparedConfig = getListData(config, setSelectedItem, goToNested);
-  return {
-    preparedConfig,
-    currentList: getCurrentList(preparedConfig)
-  };
-};
-var useCommandMenu = ({
+var EMPTY_ITEMS = [];
+var isGroupList = (list) => list[0]?.items !== void 0;
+function useCommandMenu({
   config,
-  searchPlaceholder = SEARCH_PLACEHOLDER
-}) => {
-  const [selectedItem, setSelectedItem] = (0, import_react.useState)(
-    getFirstOption(config)
+  groups,
+  asyncResultsGroup,
+  onKeyDown,
+  onKeyUp,
+  onSearchChange
+}) {
+  const selectedRef = (0, import_react.useRef)(null);
+  const [query, setQuery] = (0, import_react.useState)("");
+  const [selectedIdx, setSelectedIdx] = (0, import_react.useState)(0);
+  const filteredConfig = (0, import_react.useMemo)(() => {
+    if (!query) return config;
+    const q = query.toLowerCase();
+    return config.filter((item) => item.label.toLowerCase().includes(q));
+  }, [config, query]);
+  const shortcuts = (0, import_react.useMemo)(
+    () => Object.fromEntries(config.filter((i) => i.shortcut).map((i) => [i.shortcut, i.onSelect])),
+    [config]
   );
-  const goToNested = (passedItemId) => handleGoToNestedItems(passedItemId);
-  const state = (0, import_react.useRef)(getInitialData(config, setSelectedItem, goToNested));
-  const getState = () => state.current;
-  const setCurrentListState = (newCurrentListData) => state.current.currentList = __spreadValues(__spreadValues({}, state.current.currentList), newCurrentListData);
-  const listRef = (0, import_react.useRef)(null);
-  const searchRef = (0, import_react.useRef)(null);
-  const selectedItemRef = (0, import_react.useRef)(null);
-  useLayoutEffect(() => {
-    if (listRef.current && searchRef.current && selectedItemRef.current) {
-      const handleScrollSelectedIntoView = (selectedOptionRef) => {
-        var _a, _b, _c, _d, _e, _f, _g;
-        const listDimensions = listRef.current.getBoundingClientRect();
-        const searchDimensions = searchRef.current.getBoundingClientRect();
-        const selectedOptionDimensions = (_a = selectedItemRef.current) == null ? void 0 : _a.getBoundingClientRect();
-        const shouldScroll = selectedOptionDimensions && (selectedOptionDimensions.top < listDimensions.top + searchDimensions.height || selectedOptionDimensions.bottom > listDimensions.bottom);
-        if (((_c = (_b = selectedItemRef.current) == null ? void 0 : _b.parentElement) == null ? void 0 : _c.firstChild) === selectedItemRef.current) {
-          return (_f = (_e = (_d = selectedItemRef.current) == null ? void 0 : _d.closest("#group")) == null ? void 0 : _e.firstElementChild) == null ? void 0 : _f.scrollIntoView({
-            block: "nearest"
-          });
-        } else if (shouldScroll) {
-          return (_g = selectedOptionRef.current) == null ? void 0 : _g.scrollIntoView({
-            block: "nearest"
-          });
-        }
-      };
-      handleScrollSelectedIntoView(selectedItemRef);
-    }
-  }, [selectedItem]);
-  const handleSearchChange = (event) => {
-    const { value } = event.target;
-    const newData = getFilteredList(getState().currentList.preparedConfig, value);
-    setCurrentListState({
-      data: newData.data,
-      itemsOrder: newData.itemsOrder,
-      searchValue: value
+  const asyncItems = asyncResultsGroup?.items ?? EMPTY_ITEMS;
+  const allItems = (0, import_react.useMemo)(() => [...filteredConfig, ...asyncItems], [filteredConfig, asyncItems]);
+  const maxIdx = Math.max(0, allItems.length - 1);
+  const safeIdx = Math.min(selectedIdx, maxIdx);
+  const currentRef = (0, import_react.useRef)({ allItems, safeIdx, maxIdx });
+  currentRef.current = { allItems, safeIdx, maxIdx };
+  (0, import_react.useLayoutEffect)(() => {
+    const el = selectedRef.current;
+    if (!el) return;
+    const isFirst = el.parentNode?.firstElementChild === el;
+    (isFirst ? el.parentElement?.previousElementSibling : el)?.scrollIntoView({ block: "nearest" });
+  }, [safeIdx]);
+  const handleReset = (0, import_react.useCallback)(() => {
+    setQuery("");
+    setSelectedIdx(0);
+  }, []);
+  const handleSelect = (0, import_react.useCallback)(
+    (onSelect) => () => {
+      onSelect?.();
+      handleReset();
+    },
+    [handleReset]
+  );
+  const handleSearch = (0, import_react.useCallback)(
+    (e) => {
+      setQuery(e.target.value);
+      setSelectedIdx(0);
+      onSearchChange?.(e.target.value);
+    },
+    [onSearchChange]
+  );
+  const move = (0, import_react.useCallback)((dir) => {
+    setSelectedIdx((i) => {
+      const max = currentRef.current.maxIdx;
+      return Math.max(0, Math.min(max, i + dir));
     });
-    const newSelectedOption = newData.itemsOrder.at(0);
-    return setSelectedItem(newSelectedOption);
-  };
-  const handleGoBackFromNested = () => {
-    const getPreviousKey = (levelKey) => {
-      const lastItemsKeyIndex = levelKey.lastIndexOf("items");
-      if (lastItemsKeyIndex) {
-        const preparedKey = levelKey.slice(0, lastItemsKeyIndex);
-        const lastGroupsItemsKeyIndex = levelKey.lastIndexOf("groupItems");
-        return lastGroupsItemsKeyIndex === preparedKey.length - 1 ? preparedKey.slice(0, lastGroupsItemsKeyIndex - 1) : preparedKey;
-      }
-      return levelKey;
-    };
-    const baseState = getState();
-    const { configLevelKey } = baseState.currentList;
-    const arrayKey = getPreviousKey(configLevelKey);
-    const data = getPropByPath(baseState, [...arrayKey], {});
-    const listData = arrayKey.length > 1 ? data.items : data;
-    const newItemsOrder = getItemsOrder(listData);
-    setCurrentListState({
-      data: listData,
-      itemsOrder: newItemsOrder,
-      preparedConfig: listData,
-      configLevelKey: arrayKey,
-      searchPlaceholder: data.placeholder
-    });
-    const newSelectedOption = newItemsOrder.at(0);
-    return setSelectedItem(newSelectedOption);
-  };
-  const handleGoToNestedItems = (passedItemId) => {
-    const baseState = getState();
-    const { preparedConfig, configLevelKey } = baseState.currentList;
-    const getArrayKey = (config2, levelKey) => {
-      const indexes = findIndexes(config2, passedItemId);
-      if (!(levelKey == null ? void 0 : levelKey.length) || levelKey && levelKey.length <= 1) {
-        const [groupIndex, selectedItemIndex2] = indexes;
-        return ["preparedConfig", groupIndex, "groupItems", selectedItemIndex2];
-      }
-      const [selectedItemIndex] = indexes;
-      return [...levelKey, "items", selectedItemIndex];
-    };
-    const arrayKey = getArrayKey(preparedConfig, configLevelKey);
-    const data = getPropByPath(baseState, [...arrayKey], {});
-    const newItemsOrder = getItemsOrder(data.items);
-    setCurrentListState({
-      data: data.items,
-      itemsOrder: newItemsOrder,
-      preparedConfig: data.items,
-      configLevelKey: arrayKey,
-      searchPlaceholder: data.placeholder,
-      searchValue: void 0
-    });
-    const newSelectedOption = newItemsOrder.at(0);
-    return setSelectedItem(newSelectedOption);
-  };
-  const handleSelect = (optionRef) => {
-    var _a;
-    return (_a = optionRef.current) == null ? void 0 : _a.click();
-  };
-  const handleKeyPress = (direction) => {
-    const { itemsOrder } = getState().currentList;
-    const selectedItemIndex = itemsOrder.findIndex(({ id }) => id === (selectedItem == null ? void 0 : selectedItem.id));
-    const getNextItemIndex = () => {
-      if (selectedItemIndex < itemsOrder.length - 1 && direction === "down") {
-        return selectedItemIndex + 1;
-      }
-      if (selectedItemIndex > 0 && direction === "up") {
-        return selectedItemIndex - 1;
-      }
-      return selectedItemIndex;
-    };
-    const newSelectedItemIndex = getNextItemIndex();
-    const newSelectedItem = itemsOrder.at(newSelectedItemIndex);
-    return setSelectedItem(newSelectedItem);
-  };
-  const handleListKeyDown = (event) => {
-    switch (event.key) {
-      case DOWN_KEY: {
-        event.preventDefault();
-        return handleKeyPress("down");
-      }
-      case UP_KEY: {
-        event.preventDefault();
-        return handleKeyPress("up");
-      }
-      case ENTER_KEY: {
-        event.preventDefault();
-        return handleSelect(selectedItemRef);
-      }
-      case BACK_KEY: {
-        const { configLevelKey } = getState().currentList;
-        if (!event.target.value.length && configLevelKey.length > 1) {
-          return handleGoBackFromNested();
+  }, []);
+  const handleKeyDown = (0, import_react.useCallback)(
+    (e) => {
+      const { shiftKey, ctrlKey, metaKey, code, key } = e;
+      if (metaKey || ctrlKey) {
+        const shortcutKey = shiftKey ? `\u21E7 ${code.replace("Key", "")}` : code.replace("Key", "");
+        const handler = shortcuts[shortcutKey];
+        if (handler) {
+          e.preventDefault();
+          e.stopPropagation();
+          handleSelect(handler)();
+          return;
         }
       }
+      onKeyDown?.(e);
+      if (e.defaultPrevented) return;
+      if (key === "ArrowDown") {
+        e.preventDefault();
+        move(1);
+      } else if (key === "ArrowUp") {
+        e.preventDefault();
+        move(-1);
+      } else if (key === "Enter" && !e.nativeEvent.isComposing) {
+        e.preventDefault();
+        const { allItems: items, safeIdx: idx } = currentRef.current;
+        handleSelect(items[idx]?.onSelect)();
+      }
+    },
+    [shortcuts, handleSelect, move, onKeyDown]
+  );
+  const handleKeyUp = (0, import_react.useCallback)(
+    (e) => onKeyUp?.(e),
+    [onKeyUp]
+  );
+  const prepared = (0, import_react.useMemo)(
+    () => allItems.map(({ onSelect, disabled, ...rest }, i) => ({
+      ...rest,
+      onClick: disabled ? void 0 : handleSelect(onSelect),
+      onPointerMove: () => setSelectedIdx(i)
+    })),
+    [allItems, handleSelect]
+  );
+  const list = (0, import_react.useMemo)(() => {
+    if (!groups && !asyncResultsGroup) return prepared;
+    const itemById = new Map(prepared.map((p) => [p.id, p]));
+    const filteredIds = new Set(filteredConfig.map((c) => c.id));
+    const result = [];
+    if (groups) {
+      for (const g of groups) {
+        const items = g.items.filter((id) => filteredIds.has(id)).map((id) => itemById.get(id));
+        if (items.length) result.push({ id: g.id, label: g.label, items });
+      }
     }
-  };
-  const getMenuProps = () => ({
-    ref: listRef,
-    onKeyDown: handleListKeyDown,
-    onClick: () => {
-      var _a;
-      (_a = searchRef.current) == null ? void 0 : _a.focus();
+    if (asyncResultsGroup && asyncItems.length) {
+      const items = asyncItems.map((a) => itemById.get(a.id)).filter(Boolean);
+      if (items.length) {
+        result.push({ id: asyncResultsGroup.id, label: asyncResultsGroup.label, items });
+      }
     }
-  });
-  const getSearchProps = () => {
-    const { searchPlaceholder: listSearchPlaceholder, searchValue } = getState().currentList;
-    return {
-      autoFocus: true,
-      placeholder: listSearchPlaceholder != null ? listSearchPlaceholder : searchPlaceholder,
-      value: searchValue != null ? searchValue : "",
-      ref: searchRef,
-      onChange: handleSearchChange
-    };
-  };
+    return result.length ? result : prepared;
+  }, [groups, asyncResultsGroup, prepared, filteredConfig, asyncItems]);
+  const selection = (0, import_react.useMemo)(
+    () => ({ id: allItems[safeIdx]?.id, ref: selectedRef }),
+    [allItems, safeIdx]
+  );
   return {
-    selectedItem: selectedItem == null ? void 0 : selectedItem.id,
-    selectedItemRef,
-    menuProps: getMenuProps(),
-    searchProps: getSearchProps(),
-    list: getState().currentList.data
+    list,
+    selection,
+    menuProps: (0, import_react.useMemo)(
+      () => ({ onKeyDown: handleKeyDown, onKeyUp: handleKeyUp }),
+      [handleKeyDown, handleKeyUp]
+    ),
+    searchProps: (0, import_react.useMemo)(() => ({ value: query, onChange: handleSearch }), [query, handleSearch]),
+    searchQuery: query,
+    isAsyncLoading: asyncResultsGroup?.isLoading ?? false
   };
-};
+}
 // Annotate the CommonJS export names for ESM import in node:
 0 && (module.exports = {
-  isGroupItem,
+  isGroupList,
   useCommandMenu
 });
+//# sourceMappingURL=index.js.map

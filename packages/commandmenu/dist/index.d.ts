@@ -1,73 +1,73 @@
-import { MouseEvent, ReactNode, RefObject, KeyboardEventHandler, ChangeEventHandler } from 'react';
+import { ElementType, RefObject, KeyboardEventHandler, ChangeEventHandler } from 'react';
 
-type ItemCommonConfigData = {
+type Config = {
     id: string;
-    icon?: ReactNode;
+    icon?: ElementType;
     label: string;
+    shortcut?: string;
     description?: string;
+    disabled?: boolean;
+    onSelect: () => void;
 };
-type ItemConfigData = ItemCommonConfigData & {
-    placeholder?: never;
-    items?: never;
-    onSelect: (event: MouseEvent<HTMLLIElement>) => void;
-};
-type ItemWithNestedListConfigData = ItemCommonConfigData & {
-    onSelect?: never;
-    placeholder: string;
-    items: Array<ItemWithNestedListConfigData | ItemConfigData>;
-};
-type ItemsGroupConfigData = {
+type Group<TConfig extends Config[]> = {
     id: string;
     label: string;
-    groupItems: Array<ItemConfigData | ItemWithNestedListConfigData>;
+    items: TConfig[number]["id"][];
 };
-type ConfigData = ItemsGroupConfigData[] | ItemConfigData[] | ItemWithNestedListConfigData[];
-type ListItemData = {
+type AsyncResultsGroup = {
     id: string;
     label: string;
-    icon?: ReactNode;
+    items: Config[];
+    isLoading: boolean;
+};
+type PreparedItem = {
+    id: string;
+    label: string;
+    shortcut?: string;
+    icon?: ElementType;
     description?: string;
+    onClick: (() => void) | undefined;
     onPointerMove: () => void;
-    onClick: (event: MouseEvent<HTMLLIElement>) => void;
-    items?: ListItemData[];
-    isGroup?: never;
-    groupItems?: never;
 };
-type ListGroupData = {
+type PreparedGroup = {
     id: string;
     label: string;
-    isGroup: boolean;
-    groupItems: ListItemData[];
-    items?: never;
-    icon?: never;
-    description?: never;
+    items: PreparedItem[];
 };
-type ListData = ListGroupData[] | ListItemData[];
-type MenuProps = {
-    ref: RefObject<HTMLDivElement>;
-    onKeyDown: KeyboardEventHandler<HTMLDivElement>;
-};
-type SearchProps = {
-    autoFocus: boolean;
-    placeholder: string;
-    value?: string;
-    ref: RefObject<HTMLInputElement>;
-    onChange: ChangeEventHandler<HTMLInputElement>;
+type Selection = {
+    id: string | undefined;
+    ref: RefObject<HTMLLIElement | null>;
 };
 
-type UseCommandMenuProps = {
-    config: ConfigData;
-    searchPlaceholder?: string;
+declare const isGroupList: (list: (PreparedGroup | PreparedItem)[]) => list is PreparedGroup[];
+type CommonArgs<T extends Config[]> = {
+    config: T;
+    asyncResultsGroup?: AsyncResultsGroup;
+    onKeyDown?: KeyboardEventHandler<HTMLElement>;
+    onKeyUp?: KeyboardEventHandler<HTMLElement>;
+    onSearchChange?: (query: string) => void;
 };
 type UseCommandMenuReturn = {
-    selectedItem?: string;
-    selectedItemRef: RefObject<HTMLLIElement> | null;
-    menuProps: MenuProps;
-    searchProps: SearchProps;
-    list: ListData;
+    list: PreparedGroup[] | PreparedItem[];
+    selection: Selection;
+    menuProps: {
+        onKeyDown: KeyboardEventHandler<HTMLDivElement>;
+        onKeyUp: KeyboardEventHandler<HTMLDivElement>;
+    };
+    searchProps: {
+        value: string;
+        onChange: ChangeEventHandler<HTMLInputElement>;
+    };
+    searchQuery: string;
+    isAsyncLoading: boolean;
 };
-declare const useCommandMenu: ({ config, searchPlaceholder, }: UseCommandMenuProps) => UseCommandMenuReturn;
+declare function useCommandMenu<T extends Config[]>(args: {
+    groups: Group<T>[];
+} & CommonArgs<T>): UseCommandMenuReturn & {
+    list: PreparedGroup[];
+};
+declare function useCommandMenu<T extends Config[]>(args: CommonArgs<T>): UseCommandMenuReturn & {
+    list: PreparedItem[];
+};
 
-declare const isGroupItem: (itemToCheck: ListGroupData | ListItemData) => itemToCheck is ListGroupData;
-
-export { ConfigData, ItemConfigData, ItemsGroupConfigData, ListItemData, isGroupItem, useCommandMenu };
+export { type Config, type Group, type PreparedGroup, type PreparedItem, type Selection, isGroupList, useCommandMenu };
