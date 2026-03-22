@@ -24,8 +24,6 @@ export type AsyncResultsGroup = {
 };
 
 export type PreparedItem = {
-  isSelected: boolean;
-  ref: RefObject<HTMLLIElement | null> | null;
   id: string;
   label: string;
   shortcut?: string;
@@ -39,4 +37,9 @@ export type PreparedGroup = {
   id: string;
   label: string;
   items: PreparedItem[];
+};
+
+export type Selection = {
+  id: string | undefined;
+  ref: RefObject<HTMLLIElement | null>;
 };

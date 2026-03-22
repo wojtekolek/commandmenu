@@ -20,12 +20,15 @@ var __toCommonJS = (mod) => __copyProps(__defProp({}, "__esModule", { value: tru
 // src/index.ts
 var index_exports = {};
 __export(index_exports, {
+  isGroupList: () => isGroupList,
   useCommandMenu: () => useCommandMenu
 });
 module.exports = __toCommonJS(index_exports);
 
 // src/useCommandMenu.ts
 var import_react = require("react");
+var EMPTY_ITEMS = [];
+var isGroupList = (list) => list[0]?.items !== void 0;
 function useCommandMenu({
   config,
   groups,
@@ -43,21 +46,21 @@ function useCommandMenu({
     return config.filter((item) => item.label.toLowerCase().includes(q));
   }, [config, query]);
   const shortcuts = (0, import_react.useMemo)(
-    () => Object.fromEntries(
-      filteredConfig.filter((i) => i.shortcut).map((i) => [i.shortcut, i.onSelect])
-    ),
-    [filteredConfig]
+    () => Object.fromEntries(config.filter((i) => i.shortcut).map((i) => [i.shortcut, i.onSelect])),
+    [config]
   );
-  const asyncItems = asyncResultsGroup?.items ?? [];
+  const asyncItems = asyncResultsGroup?.items ?? EMPTY_ITEMS;
   const allItems = (0, import_react.useMemo)(() => [...filteredConfig, ...asyncItems], [filteredConfig, asyncItems]);
   const maxIdx = Math.max(0, allItems.length - 1);
   const safeIdx = Math.min(selectedIdx, maxIdx);
+  const currentRef = (0, import_react.useRef)({ allItems, safeIdx, maxIdx });
+  currentRef.current = { allItems, safeIdx, maxIdx };
   (0, import_react.useLayoutEffect)(() => {
     const el = selectedRef.current;
     if (!el) return;
     const isFirst = el.parentNode?.firstElementChild === el;
     (isFirst ? el.parentElement?.previousElementSibling : el)?.scrollIntoView({ block: "nearest" });
-  }, []);
+  }, [safeIdx]);
   const handleReset = (0, import_react.useCallback)(() => {
     setQuery("");
     setSelectedIdx(0);
@@ -71,19 +74,18 @@ function useCommandMenu({
   );
   const handleSearch = (0, import_react.useCallback)(
     (e) => {
-      const value = e.target.value;
-      setQuery(value);
+      setQuery(e.target.value);
       setSelectedIdx(0);
-      onSearchChange?.(value);
+      onSearchChange?.(e.target.value);
     },
     [onSearchChange]
   );
-  const move = (0, import_react.useCallback)(
-    (dir) => {
-      setSelectedIdx((i) => Math.max(0, Math.min(maxIdx, i + dir)));
-    },
-    [maxIdx]
-  );
+  const move = (0, import_react.useCallback)((dir) => {
+    setSelectedIdx((i) => {
+      const max = currentRef.current.maxIdx;
+      return Math.max(0, Math.min(max, i + dir));
+    });
+  }, []);
   const handleKeyDown = (0, import_react.useCallback)(
     (e) => {
       const { shiftKey, ctrlKey, metaKey, code, key } = e;
@@ -107,50 +109,50 @@ function useCommandMenu({
         move(-1);
       } else if (key === "Enter" && !e.nativeEvent.isComposing) {
         e.preventDefault();
-        handleSelect(allItems[safeIdx]?.onSelect)();
+        const { allItems: items, safeIdx: idx } = currentRef.current;
+        handleSelect(items[idx]?.onSelect)();
       }
     },
-    [shortcuts, handleSelect, move, onKeyDown, allItems, safeIdx]
+    [shortcuts, handleSelect, move, onKeyDown]
   );
   const handleKeyUp = (0, import_react.useCallback)(
     (e) => onKeyUp?.(e),
     [onKeyUp]
   );
   const prepared = (0, import_react.useMemo)(
-    () => allItems.map((item, i) => ({
-      isSelected: i === safeIdx,
-      ref: i === safeIdx ? selectedRef : null,
-      id: item.id,
-      label: item.label,
-      icon: item.icon,
-      shortcut: item.shortcut,
-      description: item.description,
-      onClick: item.disabled ? void 0 : handleSelect(item.onSelect),
+    () => allItems.map(({ onSelect, disabled, ...rest }, i) => ({
+      ...rest,
+      onClick: disabled ? void 0 : handleSelect(onSelect),
       onPointerMove: () => setSelectedIdx(i)
     })),
-    [allItems, safeIdx, handleSelect]
+    [allItems, handleSelect]
   );
   const list = (0, import_react.useMemo)(() => {
     if (!groups && !asyncResultsGroup) return prepared;
+    const itemById = new Map(prepared.map((p) => [p.id, p]));
+    const filteredIds = new Set(filteredConfig.map((c) => c.id));
     const result = [];
-    let offset = 0;
     if (groups) {
       for (const g of groups) {
-        const items = prepared.slice(0, filteredConfig.length).filter((_, i) => g.items.includes(filteredConfig[i]?.id));
+        const items = g.items.filter((id) => filteredIds.has(id)).map((id) => itemById.get(id));
         if (items.length) result.push({ id: g.id, label: g.label, items });
       }
-      offset = filteredConfig.length;
     }
     if (asyncResultsGroup && asyncItems.length) {
-      const items = prepared.slice(offset);
+      const items = asyncItems.map((a) => itemById.get(a.id)).filter(Boolean);
       if (items.length) {
         result.push({ id: asyncResultsGroup.id, label: asyncResultsGroup.label, items });
       }
     }
     return result.length ? result : prepared;
-  }, [groups, asyncResultsGroup, prepared, filteredConfig, asyncItems.length]);
+  }, [groups, asyncResultsGroup, prepared, filteredConfig, asyncItems]);
+  const selection = (0, import_react.useMemo)(
+    () => ({ id: allItems[safeIdx]?.id, ref: selectedRef }),
+    [allItems, safeIdx]
+  );
   return {
     list,
+    selection,
     menuProps: (0, import_react.useMemo)(
       () => ({ onKeyDown: handleKeyDown, onKeyUp: handleKeyUp }),
       [handleKeyDown, handleKeyUp]
@@ -162,6 +164,7 @@ function useCommandMenu({
 }
 // Annotate the CommonJS export names for ESM import in node:
 0 && (module.exports = {
+  isGroupList,
   useCommandMenu
 });
 //# sourceMappingURL=index.js.map

@@ -1,5 +1,8 @@
 export type {
   Config,
   Group,
+  PreparedGroup,
+  PreparedItem,
+  Selection,
 } from "./types";
-export { useCommandMenu } from "./useCommandMenu";
+export { isGroupList, useCommandMenu } from "./useCommandMenu";

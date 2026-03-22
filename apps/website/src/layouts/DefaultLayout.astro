@@ -1,18 +1,14 @@
 ---
-import "@fontsource/open-sauce-one/300.css"
-import "@fontsource/open-sauce-one/400.css"
-import "@fontsource/open-sauce-one/500.css"
-import "@fontsource/open-sauce-one/600.css"
-import "@fontsource/open-sauce-one/700.css"
+import { Copyright } from "../components/Copyright";
 
 type Props = {
-  title: string
-  description: string
-}
-const { title, description } = Astro.props
+  title: string;
+  description: string;
+};
+const { title, description } = Astro.props;
 ---
 
-<html lang="en" class="bg-primary-50 selection:bg-secondary-900 selection:text-primary-100 font-normal text-primary-950 antialiased">
+<html lang="en" class="bg-primary-50 selection:bg-secondary-900 selection:text-primary-100 font-sans font-normal text-primary-950 antialiased">
 	<head>
 		<meta charset="utf-8" />
 		<meta name="viewport" content="width=device-width" />
@@ -26,4 +22,8 @@ const { title, description } = Astro.props
   		<slot />
   	</main>
 	</body>
+
+ <footer>
+    <Copyright client:load />
+  </footer>
 </html>

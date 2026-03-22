@@ -12,11 +12,11 @@
   "dependencies": {
     "@astrojs/check": "0.9.8",
     "@astrojs/react": "5.0.1",
-    "@fontsource/open-sauce-one": "5.2.5",
     "@tailwindcss/vite": "4.2.2",
     "astro": "6.0.8",
     "canvas-confetti": "1.9.4",
     "commandmenu": "workspace:*",
+    "framer-motion": "^12.38.0",
     "react": "catalog:",
     "react-dom": "catalog:",
     "tailwind-merge": "3.5.0",

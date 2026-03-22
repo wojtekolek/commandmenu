@@ -1,6 +1,58 @@
 @import "tailwindcss";
 
+@font-face {
+  font-family: "Open Sauce One";
+  font-weight: 300;
+  font-display: swap;
+  src: url("/fonts/opensauceone/OpenSauceOne-Light.ttf") format("truetype");
+}
+
+@font-face {
+  font-family: "Open Sauce One";
+  font-weight: 400;
+  font-display: swap;
+  src: url("/fonts/opensauceone/OpenSauceOne-Regular.ttf") format("truetype");
+}
+
+@font-face {
+  font-family: "Open Sauce One";
+  font-weight: 500;
+  font-display: swap;
+  src: url("/fonts/opensauceone/OpenSauceOne-Medium.ttf") format("truetype");
+}
+
+@font-face {
+  font-family: "Open Sauce One";
+  font-weight: 600;
+  font-display: swap;
+  src: url("/fonts/opensauceone/OpenSauceOne-SemiBold.ttf") format("truetype");
+}
+
+@font-face {
+  font-family: "Open Sauce One";
+  font-weight: 700;
+  font-display: swap;
+  src: url("/fonts/opensauceone/OpenSauceOne-Bold.ttf") format("truetype");
+}
+
+@font-face {
+  font-family: "Rhallisa";
+  font-weight: 400;
+  font-display: swap;
+  src: url("/fonts/rhallisa/Rhallisa.ttf") format("truetype");
+}
+
+@keyframes toast-in {
+  from { opacity: 0; transform: translateY(8px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
 @theme {
+  --animate-toast-in: toast-in 200ms ease-out;
+
+  --font-sans: "Open Sauce One", system-ui, sans-serif;
+  --font-display: "Rhallisa", serif;
+
   --breakpoint-\*: initial;
   --breakpoint-sm: 480px;
   --breakpoint-md: 768px;
@@ -48,15 +100,14 @@
   --color-warning-900: #7a370d;
   --color-warning-950: #461c02;
   /* brand */
-  --color-brand-instagram: #E1306C;
-  --color-brand-linkedin: #0077B5;
-  --color-brand-github: #868E96;
+  --color-brand-instagram: #e1306c;
+  --color-brand-linkedin: #0077b5;
+  --color-brand-github: #868e96;
   --color-brand-x: #000000;
   /* other */
   --color-inherit: "inherit";
   --color-transparent: "transparent";
 }
-
 
 @layer base {
   ::selection {

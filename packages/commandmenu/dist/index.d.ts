@@ -21,8 +21,6 @@ type AsyncResultsGroup = {
     isLoading: boolean;
 };
 type PreparedItem = {
-    isSelected: boolean;
-    ref: RefObject<HTMLLIElement | null> | null;
     id: string;
     label: string;
     shortcut?: string;
@@ -36,7 +34,12 @@ type PreparedGroup = {
     label: string;
     items: PreparedItem[];
 };
+type Selection = {
+    id: string | undefined;
+    ref: RefObject<HTMLLIElement | null>;
+};
 
+declare const isGroupList: (list: (PreparedGroup | PreparedItem)[]) => list is PreparedGroup[];
 type CommonArgs<T extends Config[]> = {
     config: T;
     asyncResultsGroup?: AsyncResultsGroup;
@@ -46,6 +49,7 @@ type CommonArgs<T extends Config[]> = {
 };
 type UseCommandMenuReturn = {
     list: PreparedGroup[] | PreparedItem[];
+    selection: Selection;
     menuProps: {
         onKeyDown: KeyboardEventHandler<HTMLDivElement>;
         onKeyUp: KeyboardEventHandler<HTMLDivElement>;
@@ -66,4 +70,4 @@ declare function useCommandMenu<T extends Config[]>(args: CommonArgs<T>): UseCom
     list: PreparedItem[];
 };
 
-export { type Config, type Group, useCommandMenu };
+export { type Config, type Group, type PreparedGroup, type PreparedItem, type Selection, isGroupList, useCommandMenu };
