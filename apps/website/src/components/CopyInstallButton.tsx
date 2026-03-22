@@ -34,15 +34,17 @@ const CheckIcon: FunctionComponent = () => (
   </svg>
 );
 
-type Props = {
+const PACKAGE_MANAGER = "pnpm";
+
+type CopyInstallButtonProps = {
   packageName: string;
 };
 
-export const CopyInstallButton: FunctionComponent<Props> = ({ packageName }) => {
+export const CopyInstallButton: FunctionComponent<CopyInstallButtonProps> = ({ packageName }) => {
   const [copied, setCopied] = useState(false);
 
   const handleCopy = useCallback(() => {
-    navigator.clipboard.writeText(`npm i ${packageName}`);
+    navigator.clipboard.writeText(`${PACKAGE_MANAGER} i ${packageName}`);
     setCopied(true);
     setTimeout(() => setCopied(false), 1500);
   }, [packageName]);
@@ -56,7 +58,9 @@ export const CopyInstallButton: FunctionComponent<Props> = ({ packageName }) => 
       {/* Invisible default content to reserve width */}
       <span className="invisible col-start-1 row-start-1 flex items-center gap-2">
         <span className="text-primary-400">$</span>
-        <span>pnpm i {packageName}</span>
+        <span>
+          {PACKAGE_MANAGER} i {packageName}
+        </span>
         <CopyIcon />
       </span>
 
@@ -71,7 +75,7 @@ export const CopyInstallButton: FunctionComponent<Props> = ({ packageName }) => 
             transition={{ duration: 0.15 }}
           >
             <CheckIcon />
-            <span>Copied!</span>
+            <span>Have fun!</span>
           </motion.span>
         ) : (
           <motion.span
@@ -83,7 +87,9 @@ export const CopyInstallButton: FunctionComponent<Props> = ({ packageName }) => 
             transition={{ duration: 0.15 }}
           >
             <span className="text-primary-400">$</span>
-            <span>pnpm i {packageName}</span>
+            <span>
+              {PACKAGE_MANAGER} i {packageName}
+            </span>
             <CopyIcon />
           </motion.span>
         )}

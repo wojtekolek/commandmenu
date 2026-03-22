@@ -8,6 +8,14 @@
     "lint": {
       "outputs": []
     },
+    "test": {
+      "cache": false,
+      "persistent": false
+    },
+    "test:watch": {
+      "cache": false,
+      "persistent": true
+    },
     "dev": {
       "cache": false,
       "persistent": true
