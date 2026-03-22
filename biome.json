@@ -7,20 +7,18 @@
     "defaultBranch": "master"
   },
   "files": {
-    "ignore": [
-      ".vscode",
-      ".zed",
-      "node_modules",
-      ".turbo/**",
-      "build/**",
-      ".next/**",
-      ".astro/**",
-      "**/node_modules/**",
-      "**/.turbo/**",
-      "**/build/**",
-      "**/.next/**",
-      "**/.astro/**",
-      "**/analyze/**"
+    "includes": [
+      "**",
+      "!**/.vscode",
+      "!**/.zed",
+      "!**/node_modules",
+      "!**/.turbo",
+      "!**/build",
+      "!**/.next",
+      "!**/.astro",
+      "!**/analyze",
+      "!**/routeTree.gen.ts",
+      "!nexum-design-system-v4.html"
     ]
   },
   "formatter": {
@@ -29,36 +27,60 @@
     "formatWithErrors": false,
     "indentWidth": 2,
     "lineEnding": "lf",
-    "lineWidth": 120,
+    "lineWidth": 100,
     "attributePosition": "auto"
   },
-  "organizeImports": {
-    "enabled": true
-  },
+  "assist": { "actions": { "source": { "organizeImports": "on" } } },
   "linter": {
     "enabled": true,
+    "domains": {
+      "drizzle": "all"
+    },
     "rules": {
       "recommended": true,
       "a11y": {
         "noSvgWithoutTitle": "off",
-        "useGenericFontNames": "off"
+        "useGenericFontNames": "off",
+        "useKeyWithClickEvents": "off"
       },
       "complexity": {
-        "noMultipleSpacesInRegularExpressionLiterals": "error",
         "noUselessCatch": "error",
-        "noWith": "error",
         "noForEach": "off",
         "noExtraBooleanCast": "off",
         "noUselessSwitchCase": "off",
-        "noUselessRename": "error"
+        "noUselessRename": "error",
+        "noAdjacentSpacesInRegex": "error",
+        "noUselessFragments": "error"
       },
       "style": {
+        "useConsistentTypeDefinitions": {
+          "fix": "safe",
+          "level": "error",
+          "options": {
+            "style": "type"
+          }
+        },
         "useBlockStatements": "off",
         "noNonNullAssertion": "off",
-        "useImportType": "error"
+        "useImportType": "error",
+        "noParameterAssign": {
+          "level": "info",
+          "options": {
+            "propertyAssignment": "deny"
+          }
+        },
+        "useAsConstAssertion": "error",
+        "useDefaultParameterLast": "error",
+        "useEnumInitializers": "error",
+        "useSelfClosingElements": "error",
+        "useSingleVarDeclarator": "error",
+        "noUnusedTemplateLiteral": "error",
+        "useNumberNamespace": "error",
+        "noInferrableTypes": "error",
+        "noUselessElse": "error"
       },
       "correctness": {
-        "useExhaustiveDependencies": "off",
+        "useExhaustiveDependencies": "error",
         "noUnknownFunction": "off",
         "noUnusedImports": "error",
         "noConstAssign": "error",
@@ -68,7 +90,6 @@
         "noGlobalObjectCalls": "error",
         "noInnerDeclarations": "error",
         "noInvalidConstructorSuper": "error",
-        "noNewSymbol": "error",
         "noNonoctalDecimalEscape": "error",
         "noPrecisionLoss": "error",
         "noSelfAssign": "error",
@@ -83,7 +104,15 @@
         "noUnusedVariables": "error",
         "useIsNan": "error",
         "useValidForDirection": "error",
-        "useYield": "error"
+        "useYield": "error",
+        "noInvalidBuiltinInstantiation": "error",
+        "useValidTypeof": "error",
+        "noUnusedFunctionParameters": {
+          "level": "error",
+          "options": {
+            "ignoreRestSiblings": false
+          }
+        }
       },
       "suspicious": {
         "noExplicitAny": "off",
@@ -109,9 +138,12 @@
         "noShadowRestrictedNames": "error",
         "noUnsafeNegation": "error",
         "useGetterReturn": "error",
-        "useValidTypeof": "error"
+        "noWith": "error",
+        "noArrayIndexKey": "off",
+        "noConsole": "error"
       },
       "nursery": {
+        "noUndeclaredEnvVars": "error",
         "useSortedClasses": {
           "fix": "safe",
           "level": "warn",
@@ -123,12 +155,20 @@
       }
     }
   },
+  "css": {
+    "parser": {
+      "tailwindDirectives": true
+    },
+    "formatter": {
+      "enabled": true
+    }
+  },
   "javascript": {
     "formatter": {
       "jsxQuoteStyle": "double",
       "quoteProperties": "asNeeded",
       "trailingCommas": "all",
-      "semicolons": "asNeeded",
+      "semicolons": "always",
       "arrowParentheses": "always",
       "bracketSpacing": true,
       "bracketSameLine": false,
@@ -139,7 +179,7 @@
   },
   "overrides": [
     {
-      "include": ["*.astro"],
+      "includes": ["**/*.astro"],
       "linter": {
         "rules": {
           "style": {
@@ -149,6 +189,19 @@
           "correctness": {
             "noUnusedVariables": "off",
             "noUnusedImports": "off"
+          },
+          "nursery": {
+            "noUndeclaredEnvVars": "off"
+          }
+        }
+      }
+    },
+    {
+      "includes": ["apps/website/**/*.css"],
+      "linter": {
+        "rules": {
+          "complexity": {
+            "noImportantStyles": "off"
           }
         }
       }

@@ -1,252 +1,146 @@
 // src/useCommandMenu.ts
 import {
   useCallback,
-  useEffect,
   useLayoutEffect,
   useMemo,
   useRef,
   useState
 } from "react";
-var DOWN_KEY = "ArrowDown";
-var UP_KEY = "ArrowUp";
-var ENTER_KEY = "Enter";
-var getFirstOption = (config) => config.at(0);
-var getNewItem = (config, directionType, currentItem) => {
-  const index = currentItem?.index ?? 0;
-  const maxIndex = config.length - 1;
-  const newIndex = directionType === UP_KEY ? index - 1 : index + 1;
-  const isNewIndexValid = directionType === UP_KEY ? newIndex >= 0 : newIndex <= maxIndex;
-  if (!isNewIndexValid) return currentItem;
-  const newItem = config.at(newIndex);
-  return newItem ?? currentItem;
-};
-var getUniqueId = (id) => `${id}_${crypto.randomUUID()}`;
-var getList = (config) => config.map((itemData, index) => ({ ...itemData, index }));
-var getKeyForShortcuts = ({ shiftKey, code }) => {
-  const key = code.replace("Key", "");
-  let value = "";
-  if (shiftKey) {
-    value = value.concat("\u21E7").concat(" ");
-  }
-  return value.concat(key);
-};
-var getShortcuts = (items) => {
-  const itemsWithShortcut = items.filter(({ shortcut }) => shortcut).map(({ shortcut, onSelect }) => [shortcut, onSelect]);
-  return Object.fromEntries(itemsWithShortcut);
-};
-var getLocalState = ({
-  config,
-  groups
-}) => {
-  if (Array.isArray(groups)) {
-    const groupsWithIds = groups.map(({ items, ...restData }) => {
-      const newItems = items.map((itemId) => {
-        const newItem = config.find(({ id }) => itemId === id);
-        if (!newItem) return void 0;
-        return {
-          ...newItem,
-          id: getUniqueId(itemId)
-        };
-      }).filter((item) => item !== void 0);
-      return {
-        ...restData,
-        items: newItems
-      };
-    });
-    const list = groupsWithIds.flatMap(({ items }) => items);
-    const preparedList2 = getList(list);
-    const shortcuts2 = getShortcuts(preparedList2);
-    return {
-      initialConfig: config,
-      shortcuts: shortcuts2,
-      list: preparedList2,
-      initialList: preparedList2,
-      groups: groupsWithIds.map(({ items, ...itemData }) => ({
-        ...itemData,
-        items: items.map(({ id }) => id)
-      }))
-    };
-  }
-  const preparedList = getList(config);
-  const shortcuts = getShortcuts(preparedList);
-  return {
-    initialConfig: config,
-    shortcuts,
-    list: preparedList,
-    initialList: preparedList,
-    groups: void 0
-  };
-};
 function useCommandMenu({
   config,
   groups,
-  onKeyDown
+  asyncResultsGroup,
+  onKeyDown,
+  onKeyUp,
+  onSearchChange
 }) {
-  const state = useRef(getLocalState({ config, groups }));
-  const [selectedItem, setSelectedItem] = useState(getFirstOption(state.current.list));
-  const [searchQuery, setSearchQuery] = useState("");
-  const selectedItemRef = useRef(null);
-  const getState = () => state.current;
-  const setState = useCallback((newState) => {
-    state.current = {
-      ...state.current,
-      ...newState
-    };
-  }, []);
-  useEffect(() => {
-    const currentState = getState();
-    if (JSON.stringify(config) !== JSON.stringify(currentState.initialConfig)) {
-      const newState = getLocalState({ config, groups });
-      setState(newState);
-      setSelectedItem(getFirstOption(newState.list));
-      setSearchQuery("");
-    }
-  }, [config, groups]);
-  useLayoutEffect(() => {
-    const handleScrollSelectedIntoView = () => {
-      const item = selectedItemRef.current;
-      const isFirstElementInGroup = item?.parentNode?.firstElementChild === item;
-      if (isFirstElementInGroup) {
-        const groupLabel = item?.parentElement?.previousElementSibling;
-        groupLabel?.scrollIntoView({ block: "nearest" });
-      } else if (item) {
-        item.scrollIntoView({ block: "nearest" });
-      }
-    };
-    if (selectedItem && selectedItemRef.current) {
-      handleScrollSelectedIntoView();
-    }
-  }, [selectedItem]);
-  const handleSearch = useCallback(
-    (event) => {
-      const { value } = event.target;
-      const { initialList } = getState();
-      const filteredList = initialList.filter(({ label }) => label.toLocaleLowerCase().includes(value.toLocaleLowerCase())).map((itemData, index) => ({ ...itemData, index }));
-      setState({
-        list: filteredList,
-        shortcuts: getShortcuts(filteredList)
-      });
-      setSelectedItem(getFirstOption(filteredList));
-      setSearchQuery(value);
-    },
-    [setState]
+  const selectedRef = useRef(null);
+  const [query, setQuery] = useState("");
+  const [selectedIdx, setSelectedIdx] = useState(0);
+  const filteredConfig = useMemo(() => {
+    if (!query) return config;
+    const q = query.toLowerCase();
+    return config.filter((item) => item.label.toLowerCase().includes(q));
+  }, [config, query]);
+  const shortcuts = useMemo(
+    () => Object.fromEntries(
+      filteredConfig.filter((i) => i.shortcut).map((i) => [i.shortcut, i.onSelect])
+    ),
+    [filteredConfig]
   );
-  const handleResetState = useCallback(() => {
-    const { initialList } = getState();
-    setSearchQuery("");
-    setState({ list: initialList, shortcuts: getShortcuts(initialList) });
-    setSelectedItem(getFirstOption(initialList));
-  }, [setState]);
+  const asyncItems = asyncResultsGroup?.items ?? [];
+  const allItems = useMemo(() => [...filteredConfig, ...asyncItems], [filteredConfig, asyncItems]);
+  const maxIdx = Math.max(0, allItems.length - 1);
+  const safeIdx = Math.min(selectedIdx, maxIdx);
+  useLayoutEffect(() => {
+    const el = selectedRef.current;
+    if (!el) return;
+    const isFirst = el.parentNode?.firstElementChild === el;
+    (isFirst ? el.parentElement?.previousElementSibling : el)?.scrollIntoView({ block: "nearest" });
+  }, []);
+  const handleReset = useCallback(() => {
+    setQuery("");
+    setSelectedIdx(0);
+  }, []);
   const handleSelect = useCallback(
     (onSelect) => () => {
-      if (typeof onSelect === "function") {
-        onSelect();
-      } else {
-        selectedItemRef.current?.click();
-      }
-      handleResetState();
+      onSelect?.();
+      handleReset();
     },
-    [handleResetState]
+    [handleReset]
   );
-  const handleKeyPress = useCallback(
-    (type) => {
-      const { list } = getState();
-      const nextItem = getNewItem(list, type, selectedItem);
-      setSelectedItem(nextItem);
+  const handleSearch = useCallback(
+    (e) => {
+      const value = e.target.value;
+      setQuery(value);
+      setSelectedIdx(0);
+      onSearchChange?.(value);
     },
-    [selectedItem]
+    [onSearchChange]
   );
-  const handleItemsShortcuts = useCallback(
-    (event) => {
-      const { shiftKey, ctrlKey, metaKey, code } = event;
-      const shortcutsMap = getState().shortcuts;
-      if ((metaKey || ctrlKey) && shortcutsMap) {
-        const preparedKey = getKeyForShortcuts({ shiftKey, code });
-        const selectHandler = shortcutsMap[preparedKey];
-        if (typeof selectHandler === "function") {
-          event.preventDefault();
-          event.stopPropagation();
-          const handler = handleSelect(selectHandler);
-          handler();
+  const move = useCallback(
+    (dir) => {
+      setSelectedIdx((i) => Math.max(0, Math.min(maxIdx, i + dir)));
+    },
+    [maxIdx]
+  );
+  const handleKeyDown = useCallback(
+    (e) => {
+      const { shiftKey, ctrlKey, metaKey, code, key } = e;
+      if (metaKey || ctrlKey) {
+        const shortcutKey = shiftKey ? `\u21E7 ${code.replace("Key", "")}` : code.replace("Key", "");
+        const handler = shortcuts[shortcutKey];
+        if (handler) {
+          e.preventDefault();
+          e.stopPropagation();
+          handleSelect(handler)();
+          return;
         }
       }
-    },
-    [handleSelect]
-  );
-  const handleListKeyDown = useCallback(
-    (event) => {
-      handleItemsShortcuts(event);
-      onKeyDown?.(event);
-      if (!event.defaultPrevented) {
-        switch (event.key) {
-          case DOWN_KEY: {
-            event.preventDefault();
-            handleKeyPress(DOWN_KEY);
-            break;
-          }
-          case UP_KEY: {
-            event.preventDefault();
-            handleKeyPress(UP_KEY);
-            break;
-          }
-          case ENTER_KEY: {
-            if (!event.nativeEvent.isComposing) {
-              event.preventDefault();
-              handleSelect()();
-            }
-          }
-        }
+      onKeyDown?.(e);
+      if (e.defaultPrevented) return;
+      if (key === "ArrowDown") {
+        e.preventDefault();
+        move(1);
+      } else if (key === "ArrowUp") {
+        e.preventDefault();
+        move(-1);
+      } else if (key === "Enter" && !e.nativeEvent.isComposing) {
+        e.preventDefault();
+        handleSelect(allItems[safeIdx]?.onSelect)();
       }
     },
-    [handleItemsShortcuts, handleKeyPress, handleSelect, onKeyDown]
+    [shortcuts, handleSelect, move, onKeyDown, allItems, safeIdx]
   );
-  const menuProps = useMemo(
-    () => ({
-      onKeyDown: handleListKeyDown
-    }),
-    [handleListKeyDown]
+  const handleKeyUp = useCallback(
+    (e) => onKeyUp?.(e),
+    [onKeyUp]
   );
-  const searchProps = useMemo(
-    () => ({
-      value: searchQuery,
-      onChange: handleSearch
-    }),
-    [handleSearch, searchQuery]
+  const prepared = useMemo(
+    () => allItems.map((item, i) => ({
+      isSelected: i === safeIdx,
+      ref: i === safeIdx ? selectedRef : null,
+      id: item.id,
+      label: item.label,
+      icon: item.icon,
+      shortcut: item.shortcut,
+      description: item.description,
+      onClick: item.disabled ? void 0 : handleSelect(item.onSelect),
+      onPointerMove: () => setSelectedIdx(i)
+    })),
+    [allItems, safeIdx, handleSelect]
   );
-  const preparedList = getState().list.map((itemData) => {
-    const isSelected = itemData.id === selectedItem?.id;
-    return {
-      isSelected,
-      ref: isSelected ? selectedItemRef : null,
-      id: itemData.id,
-      label: itemData.label,
-      icon: itemData.icon,
-      shortcut: itemData.shortcut,
-      description: itemData.description,
-      disabled: itemData.disabled,
-      onClick: itemData.disabled ? void 0 : handleSelect(itemData.onSelect),
-      onPointerMove: () => setSelectedItem(itemData)
-    };
-  });
-  const preparedGroups = useMemo(() => {
-    const groupsData = getState().groups;
-    return Array.isArray(groupsData) ? groupsData.map(({ id, items, label }) => ({
-      id,
-      label,
-      items: preparedList.filter(({ id: id2 }) => items.includes(id2))
-    })).filter(({ items }) => items.length) : void 0;
-  }, [preparedList]);
+  const list = useMemo(() => {
+    if (!groups && !asyncResultsGroup) return prepared;
+    const result = [];
+    let offset = 0;
+    if (groups) {
+      for (const g of groups) {
+        const items = prepared.slice(0, filteredConfig.length).filter((_, i) => g.items.includes(filteredConfig[i]?.id));
+        if (items.length) result.push({ id: g.id, label: g.label, items });
+      }
+      offset = filteredConfig.length;
+    }
+    if (asyncResultsGroup && asyncItems.length) {
+      const items = prepared.slice(offset);
+      if (items.length) {
+        result.push({ id: asyncResultsGroup.id, label: asyncResultsGroup.label, items });
+      }
+    }
+    return result.length ? result : prepared;
+  }, [groups, asyncResultsGroup, prepared, filteredConfig, asyncItems.length]);
   return {
-    list: preparedGroups ?? preparedList,
-    menuProps,
-    searchProps
+    list,
+    menuProps: useMemo(
+      () => ({ onKeyDown: handleKeyDown, onKeyUp: handleKeyUp }),
+      [handleKeyDown, handleKeyUp]
+    ),
+    searchProps: useMemo(() => ({ value: query, onChange: handleSearch }), [query, handleSearch]),
+    searchQuery: query,
+    isAsyncLoading: asyncResultsGroup?.isLoading ?? false
   };
 }
-
-// src/utils.ts
-var isGroupItem = (itemToCheck) => Array.isArray(itemToCheck.groupItems);
 export {
-  isGroupItem,
   useCommandMenu
 };
 //# sourceMappingURL=index.mjs.map

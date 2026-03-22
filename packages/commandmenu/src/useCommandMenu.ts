@@ -1,382 +1,211 @@
 import {
   type ChangeEventHandler,
-  type ElementType,
   type KeyboardEventHandler,
-  type PointerEvent,
-  type RefObject,
   useCallback,
-  useEffect,
   useLayoutEffect,
   useMemo,
   useRef,
   useState,
-} from "react"
+} from "react";
+import type { AsyncResultsGroup, Config, Group, PreparedGroup, PreparedItem } from "./types";
 
-const DOWN_KEY = "ArrowDown"
-const UP_KEY = "ArrowUp"
-const ENTER_KEY = "Enter"
+export const isGroupList = (list: (PreparedGroup | PreparedItem)[]): list is PreparedGroup[] =>
+  (list as PreparedGroup[])[0]?.items !== undefined;
 
-export type Config = {
-  id: string
-  icon?: ElementType
-  label: string
-  shortcut?: string
-  description?: string
-  disabled?: boolean
-  onSelect: () => void
-}
-
-export type Group<TConfig extends Config[]> = {
-  id: string
-  label: string
-  items: TConfig[number]["id"][]
-}
-
-type Item = Config & {
-  index: number
-}
-
-type Direction = typeof UP_KEY | typeof DOWN_KEY
-
-const getFirstOption = (config: Item[]): Item | undefined => config.at(0)
-
-const getNewItem = (config: Item[], directionType: Direction, currentItem?: Item) => {
-  const index = currentItem?.index ?? 0
-  const maxIndex = config.length - 1
-
-  const newIndex = directionType === UP_KEY ? index - 1 : index + 1
-  const isNewIndexValid = directionType === UP_KEY ? newIndex >= 0 : newIndex <= maxIndex
-  if (!isNewIndexValid) return currentItem
-  const newItem = config.at(newIndex)
-  return newItem ?? currentItem
-}
-
-const getUniqueId = (id: string) => `${id}_${crypto.randomUUID()}`
-
-const getList = (config: Config[]): Item[] => config.map((itemData, index) => ({ ...itemData, index }))
-
-export type PreparedItem = {
-  isSelected: boolean
-  ref: RefObject<HTMLLIElement | null> | null
-  id: string
-  label: string
-  shortcut?: string
-  icon?: ElementType
-  description: string | undefined
-  onClick: (() => void) | undefined
-  onPointerMove: (event: PointerEvent<HTMLLIElement>) => void
-}
-
-export type PreparedGroup = {
-  id: string
-  label: string
-  items: PreparedItem[]
-}
-
-export const isGroupList = (config: (PreparedGroup | PreparedItem)[]): config is PreparedGroup[] =>
-  (config as PreparedGroup[]).at(0)?.items !== undefined
-
-const getKeyForShortcuts = ({ shiftKey, code }: { code: string; shiftKey: boolean }) => {
-  const key = code.replace("Key", "")
-  let value = ""
-  if (shiftKey) {
-    value = value.concat("⇧").concat(" ")
-  }
-
-  return value.concat(key)
-}
-
-const getShortcuts = (items: Item[]) => {
-  const itemsWithShortcut = items
-    .filter(({ shortcut }) => shortcut)
-    .map(({ shortcut, onSelect }) => [shortcut, onSelect])
-  return Object.fromEntries(itemsWithShortcut)
-}
-
-const getLocalState = <TConfig extends Config[]>({
-  config,
-  groups,
-}: { config: TConfig; groups?: Group<TConfig>[] }) => {
-  if (Array.isArray(groups)) {
-    const groupsWithIds = groups.map(({ items, ...restData }) => {
-      const newItems = items
-        .map((itemId) => {
-          const newItem = config.find(({ id }) => itemId === id)!
-          if (!newItem) return undefined
-
-          return {
-            ...newItem,
-            id: getUniqueId(itemId),
-          }
-        })
-        .filter((item) => item !== undefined)
-
-      return {
-        ...restData,
-        items: newItems,
-      }
-    })
-    const list = groupsWithIds.flatMap(({ items }) => items)
-    const preparedList = getList(list)
-    const shortcuts = getShortcuts(preparedList)
-
-    return {
-      initialConfig: config,
-      shortcuts,
-      list: preparedList,
-      initialList: preparedList,
-      groups: groupsWithIds.map(({ items, ...itemData }) => ({
-        ...itemData,
-        items: items.map(({ id }) => id),
-      })),
-    }
-  }
-  const preparedList = getList(config)
-  const shortcuts = getShortcuts(preparedList)
-
-  return {
-    initialConfig: config,
-    shortcuts,
-    list: preparedList,
-    initialList: preparedList,
-    groups: undefined,
-  }
-}
+type CommonArgs<T extends Config[]> = {
+  config: T;
+  asyncResultsGroup?: AsyncResultsGroup;
+  onKeyDown?: KeyboardEventHandler<HTMLElement>;
+  onKeyUp?: KeyboardEventHandler<HTMLElement>;
+  onSearchChange?: (query: string) => void;
+};
 
 type UseCommandMenuReturn = {
+  list: PreparedGroup[] | PreparedItem[];
   menuProps: {
-    onKeyDown: KeyboardEventHandler<HTMLDivElement>
-  }
-  searchProps: {
-    value: string
-    onChange: ChangeEventHandler<HTMLInputElement>
-  }
-}
+    onKeyDown: KeyboardEventHandler<HTMLDivElement>;
+    onKeyUp: KeyboardEventHandler<HTMLDivElement>;
+  };
+  searchProps: { value: string; onChange: ChangeEventHandler<HTMLInputElement> };
+  searchQuery: string;
+  isAsyncLoading: boolean;
+};
 
-type LocalState<TConfig extends Config[]> = {
-  initialConfig: TConfig
-  initialList: Item[]
-  list: Item[]
-  groups?: Group<TConfig>[]
-  shortcuts?: Record<string, () => void>
-}
+export function useCommandMenu<T extends Config[]>(
+  args: { groups: Group<T>[] } & CommonArgs<T>,
+): UseCommandMenuReturn & { list: PreparedGroup[] };
 
-type CommonArguments<TConfig extends Config[]> = {
-  config: TConfig
-  onKeyDown?: KeyboardEventHandler<HTMLElement>
-}
+export function useCommandMenu<T extends Config[]>(
+  args: CommonArgs<T>,
+): UseCommandMenuReturn & { list: PreparedItem[] };
 
-export function useCommandMenu<TConfig extends Config[]>(
-  args: {
-    groups: Group<TConfig>[]
-  } & CommonArguments<TConfig>,
-): UseCommandMenuReturn & {
-  list: PreparedGroup[]
-}
-
-export function useCommandMenu<TConfig extends Config[]>(
-  args: CommonArguments<TConfig>,
-): UseCommandMenuReturn & {
-  list: PreparedItem[]
-}
-
-export function useCommandMenu<TConfig extends Config[]>({
+export function useCommandMenu<T extends Config[]>({
   config,
   groups,
+  asyncResultsGroup,
   onKeyDown,
-}: {
-  groups?: Group<TConfig>[]
-} & CommonArguments<TConfig>): UseCommandMenuReturn & {
-  list: (PreparedItem | PreparedGroup)[]
-} {
-  const state = useRef<LocalState<TConfig>>(getLocalState({ config, groups }))
-  const [selectedItem, setSelectedItem] = useState<Item | undefined>(getFirstOption(state.current.list))
-  const [searchQuery, setSearchQuery] = useState<string>("")
-  const selectedItemRef = useRef<HTMLLIElement>(null)
+  onKeyUp,
+  onSearchChange,
+}: { groups?: Group<T>[] } & CommonArgs<T>): UseCommandMenuReturn {
+  const selectedRef = useRef<HTMLLIElement>(null);
+  const [query, setQuery] = useState("");
+  const [selectedIdx, setSelectedIdx] = useState(0);
 
-  const getState = () => state.current
-  const setState = useCallback((newState: Partial<LocalState<TConfig>>) => {
-    state.current = {
-      ...state.current,
-      ...newState,
-    }
-  }, [])
+  // Filter local items based on query
+  const filteredConfig = useMemo(() => {
+    if (!query) return config;
+    const q = query.toLowerCase();
+    return config.filter((item) => item.label.toLowerCase().includes(q)) as T;
+  }, [config, query]);
 
-  useEffect(() => {
-    const currentState = getState()
-    if (JSON.stringify(config) !== JSON.stringify(currentState.initialConfig)) {
-      const newState = getLocalState({ config, groups })
-      setState(newState)
-      setSelectedItem(getFirstOption(newState.list))
-      setSearchQuery("")
-    }
-  }, [config, groups])
+  // Build shortcuts map from filtered items
+  const shortcuts = useMemo(
+    () =>
+      Object.fromEntries(
+        filteredConfig.filter((i) => i.shortcut).map((i) => [i.shortcut, i.onSelect]),
+      ),
+    [filteredConfig],
+  );
 
+  // Combine local and async items
+  const asyncItems = asyncResultsGroup?.items ?? [];
+  const allItems = useMemo(() => [...filteredConfig, ...asyncItems], [filteredConfig, asyncItems]);
+
+  // Clamp selected index
+  const maxIdx = Math.max(0, allItems.length - 1);
+  const safeIdx = Math.min(selectedIdx, maxIdx);
+
+  // Scroll selected item into view
   useLayoutEffect(() => {
-    const handleScrollSelectedIntoView = () => {
-      const item = selectedItemRef.current
-      const isFirstElementInGroup = item?.parentNode?.firstElementChild === item
+    const el = selectedRef.current;
+    if (!el) return;
+    const isFirst = el.parentNode?.firstElementChild === el;
+    (isFirst ? el.parentElement?.previousElementSibling : el)?.scrollIntoView({ block: "nearest" });
+  }, []);
 
-      if (isFirstElementInGroup) {
-        const groupLabel = item?.parentElement?.previousElementSibling
-        groupLabel?.scrollIntoView({ block: "nearest" })
-      } else if (item) {
-        item.scrollIntoView({ block: "nearest" })
-      }
-    }
-
-    if (selectedItem && selectedItemRef.current) {
-      handleScrollSelectedIntoView()
-    }
-  }, [selectedItem])
-
-  const handleSearch: ChangeEventHandler<HTMLInputElement> = useCallback(
-    (event) => {
-      const { value } = event.target
-      const { initialList } = getState()
-      const filteredList = initialList
-        .filter(({ label }) => label.toLocaleLowerCase().includes(value.toLocaleLowerCase()))
-        .map((itemData, index) => ({ ...itemData, index }))
-
-      setState({
-        list: filteredList,
-        shortcuts: getShortcuts(filteredList),
-      })
-      setSelectedItem(getFirstOption(filteredList))
-      setSearchQuery(value)
-    },
-    [setState],
-  )
-
-  const handleResetState = useCallback(() => {
-    const { initialList } = getState()
-    setSearchQuery("")
-    setState({ list: initialList, shortcuts: getShortcuts(initialList) })
-
-    setSelectedItem(getFirstOption(initialList))
-  }, [setState])
+  // H
+  const handleReset = useCallback(() => {
+    setQuery("");
+    setSelectedIdx(0);
+  }, []);
 
   const handleSelect = useCallback(
     (onSelect?: () => void) => () => {
-      if (typeof onSelect === "function") {
-        onSelect()
-      } else {
-        selectedItemRef.current?.click()
-      }
-      handleResetState()
+      onSelect?.();
+      handleReset();
     },
-    [handleResetState],
-  )
+    [handleReset],
+  );
 
-  const handleKeyPress = useCallback(
-    (type: typeof UP_KEY | typeof DOWN_KEY) => {
-      const { list } = getState()
-      const nextItem = getNewItem(list, type, selectedItem)
-
-      setSelectedItem(nextItem)
+  const handleSearch: ChangeEventHandler<HTMLInputElement> = useCallback(
+    (e) => {
+      const value = e.target.value;
+      setQuery(value);
+      setSelectedIdx(0);
+      onSearchChange?.(value);
     },
-    [selectedItem],
-  )
+    [onSearchChange],
+  );
 
-  const handleItemsShortcuts: KeyboardEventHandler<HTMLDivElement> = useCallback(
-    (event) => {
-      const { shiftKey, ctrlKey, metaKey, code } = event
-      const shortcutsMap = getState().shortcuts
+  const move = useCallback(
+    (dir: 1 | -1) => {
+      setSelectedIdx((i) => Math.max(0, Math.min(maxIdx, i + dir)));
+    },
+    [maxIdx],
+  );
 
-      if ((metaKey || ctrlKey) && shortcutsMap) {
-        const preparedKey = getKeyForShortcuts({ shiftKey, code })
-        const selectHandler = shortcutsMap[preparedKey]
+  const handleKeyDown: KeyboardEventHandler<HTMLDivElement> = useCallback(
+    (e) => {
+      const { shiftKey, ctrlKey, metaKey, code, key } = e;
 
-        if (typeof selectHandler === "function") {
-          event.preventDefault()
-          event.stopPropagation()
-          const handler = handleSelect(selectHandler)
-          handler()
+      // Handle shortcuts
+      if (metaKey || ctrlKey) {
+        const shortcutKey = shiftKey ? `⇧ ${code.replace("Key", "")}` : code.replace("Key", "");
+        const handler = shortcuts[shortcutKey];
+        if (handler) {
+          e.preventDefault();
+          e.stopPropagation();
+          handleSelect(handler)();
+          return;
         }
       }
-    },
-    [handleSelect],
-  )
 
-  const handleListKeyDown: KeyboardEventHandler<HTMLDivElement> = useCallback(
-    (event) => {
-      handleItemsShortcuts(event)
-      onKeyDown?.(event)
+      onKeyDown?.(e);
+      if (e.defaultPrevented) return;
 
-      if (!event.defaultPrevented) {
-        switch (event.key) {
-          case DOWN_KEY: {
-            event.preventDefault()
-            handleKeyPress(DOWN_KEY)
-            break
-          }
-          case UP_KEY: {
-            event.preventDefault()
-            handleKeyPress(UP_KEY)
-            break
-          }
-          case ENTER_KEY: {
-            // Check if IME composition is finished before triggering onSelect
-            if (!event.nativeEvent.isComposing) {
-              event.preventDefault()
-              handleSelect()()
-            }
-          }
-        }
+      if (key === "ArrowDown") {
+        e.preventDefault();
+        move(1);
+      } else if (key === "ArrowUp") {
+        e.preventDefault();
+        move(-1);
+      } else if (key === "Enter" && !e.nativeEvent.isComposing) {
+        e.preventDefault();
+        handleSelect(allItems[safeIdx]?.onSelect)();
       }
     },
-    [handleItemsShortcuts, handleKeyPress, handleSelect, onKeyDown],
-  )
+    [shortcuts, handleSelect, move, onKeyDown, allItems, safeIdx],
+  );
 
-  const menuProps = useMemo(
-    () => ({
-      onKeyDown: handleListKeyDown,
-    }),
-    [handleListKeyDown],
-  )
+  const handleKeyUp: KeyboardEventHandler<HTMLDivElement> = useCallback(
+    (e) => onKeyUp?.(e),
+    [onKeyUp],
+  );
 
-  const searchProps = useMemo(
-    () => ({
-      value: searchQuery,
-      onChange: handleSearch,
-    }),
-    [handleSearch, searchQuery],
-  )
+  // Prepare items for render
+  const prepared = useMemo(
+    (): PreparedItem[] =>
+      allItems.map((item, i) => ({
+        isSelected: i === safeIdx,
+        ref: i === safeIdx ? selectedRef : null,
+        id: item.id,
+        label: item.label,
+        icon: item.icon,
+        shortcut: item.shortcut,
+        description: item.description,
+        onClick: item.disabled ? undefined : handleSelect(item.onSelect),
+        onPointerMove: () => setSelectedIdx(i),
+      })),
+    [allItems, safeIdx, handleSelect],
+  );
 
-  const preparedList = getState().list.map((itemData) => {
-    const isSelected = itemData.id === selectedItem?.id
+  // Prepare grouped output
+  const list = useMemo(() => {
+    if (!groups && !asyncResultsGroup) return prepared;
 
-    return {
-      isSelected,
-      ref: isSelected ? selectedItemRef : null,
-      id: itemData.id,
-      label: itemData.label,
-      icon: itemData.icon,
-      shortcut: itemData.shortcut,
-      description: itemData.description,
-      disabled: itemData.disabled,
-      onClick: itemData.disabled ? undefined : handleSelect(itemData.onSelect),
-      onPointerMove: () => setSelectedItem(itemData),
+    const result: PreparedGroup[] = [];
+    let offset = 0;
+
+    // Add local groups
+    if (groups) {
+      for (const g of groups) {
+        const items = prepared
+          .slice(0, filteredConfig.length)
+          .filter((_, i) => g.items.includes(filteredConfig[i]?.id));
+        if (items.length) result.push({ id: g.id, label: g.label, items });
+      }
+      offset = filteredConfig.length;
     }
-  })
 
-  const preparedGroups = useMemo(() => {
-    const groupsData = getState().groups
+    // Add async group
+    if (asyncResultsGroup && asyncItems.length) {
+      const items = prepared.slice(offset);
+      if (items.length) {
+        result.push({ id: asyncResultsGroup.id, label: asyncResultsGroup.label, items });
+      }
+    }
 
-    return Array.isArray(groupsData)
-      ? groupsData
-          .map(({ id, items, label }) => ({
-            id,
-            label,
-            items: preparedList.filter(({ id }) => items.includes(id)),
-          }))
-          .filter(({ items }) => items.length)
-      : undefined
-  }, [preparedList])
+    return result.length ? result : prepared;
+  }, [groups, asyncResultsGroup, prepared, filteredConfig, asyncItems.length]);
 
   return {
-    list: preparedGroups ?? preparedList,
-    menuProps,
-    searchProps,
-  }
+    list,
+    menuProps: useMemo(
+      () => ({ onKeyDown: handleKeyDown, onKeyUp: handleKeyUp }),
+      [handleKeyDown, handleKeyUp],
+    ),
+    searchProps: useMemo(() => ({ value: query, onChange: handleSearch }), [query, handleSearch]),
+    searchQuery: query,
+    isAsyncLoading: asyncResultsGroup?.isLoading ?? false,
+  };
 }
