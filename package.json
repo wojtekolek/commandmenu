@@ -11,7 +11,7 @@
     "test:watch": "turbo run test:watch",
     "changeset": "changeset",
     "version-package": "changeset version",
-    "publish-package": "turbo run build lint --filter=example^... && changeset publish"
+    "publish-package": "turbo run build lint --filter=website^... && changeset publish"
   },
   "devDependencies": {
     "@biomejs/biome": "2.4.8",
