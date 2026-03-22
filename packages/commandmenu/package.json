@@ -3,6 +3,11 @@
   "version": "0.5.0",
   "author": "Wojtek Olek",
   "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/wojtekolek/commandmenu",
+    "directory": "packages/commandmenu"
+  },
   "keywords": [
     "command",
     "menu",
