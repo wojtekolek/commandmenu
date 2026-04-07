@@ -12,10 +12,9 @@
   },
   "dependencies": {
     "@astrojs/check": "0.9.8",
-    "@astrojs/react": "5.0.1",
+    "@astrojs/react": "5.0.3",
     "@tailwindcss/vite": "4.2.2",
-    "astro": "6.0.8",
-    "canvas-confetti": "1.9.4",
+    "astro": "6.1.4",
     "commandmenu": "workspace:*",
     "framer-motion": "^12.38.0",
     "react": "catalog:",
@@ -24,7 +23,6 @@
     "tailwindcss": "4.2.2"
   },
   "devDependencies": {
-    "@types/canvas-confetti": "1.9.0",
     "@types/react": "catalog:",
     "@types/react-dom": "catalog:",
     "typescript": "catalog:"

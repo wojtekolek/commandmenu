@@ -43,8 +43,14 @@
 }
 
 @keyframes toast-in {
-  from { opacity: 0; transform: translateY(8px); }
-  to { opacity: 1; transform: translateY(0); }
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
 
 @theme {
@@ -111,13 +117,13 @@
 
 @layer base {
   ::selection {
-    color: theme(colors.secondary.100);
-    background-color: theme(colors.secondary.600);
+    color: var(--colors-secondary-100);
+    background-color: var(--colors-secondary-600);
   }
 
   ::-moz-selection {
-    color: theme(colors.secondary.100);
-    background-color: theme(colors.secondary.600);
+    color: var(--colors-secondary-100);
+    background-color: var(--colors-secondary-600);
   }
 }
 

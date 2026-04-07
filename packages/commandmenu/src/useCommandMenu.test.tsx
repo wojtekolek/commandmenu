@@ -57,9 +57,9 @@ describe("isGroupList", () => {
   });
 
   it("returns false for PreparedItem[]", () => {
-    expect(
-      isGroupList([{ id: "i", label: "I", onClick: vi.fn(), onPointerMove: vi.fn() }]),
-    ).toBe(false);
+    expect(isGroupList([{ id: "i", label: "I", onClick: vi.fn(), onPointerMove: vi.fn() }])).toBe(
+      false,
+    );
   });
 
   it("returns false for empty array", () => {
@@ -222,9 +222,7 @@ describe("useCommandMenu", () => {
         { id: "clipboard", label: "Clipboard", items: ["copy", "paste", "cut"] },
         { id: "destructive", label: "Destructive", items: ["delete"] },
       ];
-      const { result } = renderHook(() =>
-        useCommandMenu({ config: defaultConfig, groups }),
-      );
+      const { result } = renderHook(() => useCommandMenu({ config: defaultConfig, groups }));
 
       act(() => {
         result.current.searchProps.onChange({
@@ -319,9 +317,7 @@ describe("useCommandMenu", () => {
       const { result } = renderHook(() => useCommandMenu({ config: defaultConfig }));
 
       act(() => {
-        result.current.menuProps.onKeyDown(
-          createKeyboardEvent("Enter", { isComposing: true }),
-        );
+        result.current.menuProps.onKeyDown(createKeyboardEvent("Enter", { isComposing: true }));
       });
 
       expect(defaultConfig[0].onSelect).not.toHaveBeenCalled();
@@ -347,9 +343,7 @@ describe("useCommandMenu", () => {
 
     it("calls custom onKeyDown handler", () => {
       const onKeyDown = vi.fn();
-      const { result } = renderHook(() =>
-        useCommandMenu({ config: defaultConfig, onKeyDown }),
-      );
+      const { result } = renderHook(() => useCommandMenu({ config: defaultConfig, onKeyDown }));
 
       const event = createKeyboardEvent("a");
       act(() => {
@@ -361,9 +355,7 @@ describe("useCommandMenu", () => {
 
     it("skips navigation when custom onKeyDown calls preventDefault", () => {
       const onKeyDown = vi.fn((e: React.KeyboardEvent) => e.preventDefault());
-      const { result } = renderHook(() =>
-        useCommandMenu({ config: defaultConfig, onKeyDown }),
-      );
+      const { result } = renderHook(() => useCommandMenu({ config: defaultConfig, onKeyDown }));
 
       act(() => {
         result.current.menuProps.onKeyDown(createKeyboardEvent("ArrowDown"));
@@ -374,9 +366,7 @@ describe("useCommandMenu", () => {
 
     it("calls custom onKeyUp handler", () => {
       const onKeyUp = vi.fn();
-      const { result } = renderHook(() =>
-        useCommandMenu({ config: defaultConfig, onKeyUp }),
-      );
+      const { result } = renderHook(() => useCommandMenu({ config: defaultConfig, onKeyUp }));
 
       const event = createKeyboardEvent("a");
       act(() => {
@@ -585,10 +575,9 @@ describe("useCommandMenu", () => {
   describe("config updates", () => {
     it("reflects new config on rerender", () => {
       const initialConfig = [createConfig({ id: "a", label: "A" })] satisfies Config[];
-      const { result, rerender } = renderHook(
-        ({ config }) => useCommandMenu({ config }),
-        { initialProps: { config: initialConfig } },
-      );
+      const { result, rerender } = renderHook(({ config }) => useCommandMenu({ config }), {
+        initialProps: { config: initialConfig },
+      });
 
       expect(result.current.list).toHaveLength(1);
 
