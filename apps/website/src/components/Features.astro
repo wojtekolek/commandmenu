@@ -1,0 +1,54 @@
+---
+import { eyebrow, h2 } from "../utils/styles";
+import Band from "./Band.astro";
+
+const FEATURES = [
+  {
+    title: "Headless",
+    body: "Every element is yours to render. The hook hands back props and state, never markup or styles.",
+  },
+  {
+    title: "Keyboard first",
+    body: "Arrow keys skip disabled items, Enter selects, and ⌘ or Ctrl shortcuts fire from anywhere in the menu.",
+  },
+  {
+    title: "Accessible",
+    body: "Combobox, listbox and option roles come wired in, with the highlighted option announced as you move.",
+  },
+  {
+    title: "Groups and async",
+    body: "Sort items into sections and stream remote results in as their own group, all in one keyboard order.",
+  },
+  {
+    title: "Fully typed",
+    body: "Extra fields on your items come back typed, and group ids are checked against your config.",
+  },
+  {
+    title: "Light",
+    body: "No dependencies beyond React. Moving the highlight re-renders only the two rows it leaves and lands on.",
+  },
+];
+
+const pad = (value: number) => String(value).padStart(2, "0");
+---
+
+<Band id="features" class="flex flex-col gap-16 lg:gap-21">
+  <div class="flex flex-col gap-6">
+    <p class={eyebrow}>Features</p>
+    <h2 class:list={[h2, "max-w-3xl"]}>
+      All of the behaviour, <em>none of the markup.</em>
+    </h2>
+  </div>
+
+  <ul class="grid gap-x-10 gap-y-12 md:grid-cols-2 lg:grid-cols-3">
+    {
+      FEATURES.map(({ title, body }, index) => (
+        <li class="flex flex-col gap-3 border-primary-200 border-t pt-6">
+          <span class="text-primary-600 text-xs tabular-nums tracking-[0.2em]">{pad(index + 1)}</span>
+          <h3 class="font-medium text-primary-950 text-xl">{title}</h3>
+          <p class="max-w-sm text-pretty text-primary-600">{body}</p>
+        </li>
+      ))
+    }
+  </ul>
+</Band>

@@ -7,7 +7,7 @@
     "forceConsistentCasingInFileNames": true,
     "inlineSources": false,
     "isolatedModules": true,
-    "moduleResolution": "node",
+    "moduleResolution": "bundler",
     "noUnusedLocals": false,
     "noUnusedParameters": false,
     "preserveWatchOutput": true,
@@ -16,7 +16,7 @@
     "jsx": "react-jsx",
     "lib": ["es2022", "DOM"],
     "module": "ESNext",
-    "target": "es6"
+    "target": "es2020"
   },
   "include": ["."],
   "exclude": ["dist", "build", "node_modules"]

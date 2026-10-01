@@ -1,0 +1,16 @@
+---
+const lobe = "absolute aspect-square rounded-full";
+---
+
+<!-- Out-of-focus light behind the header, in the page's own slate and white,
+     after wojtekolek.com's. Radial gradients are soft by nature, so nothing
+     here needs a blur filter. Masked to fade with the header card. The parent
+     needs `relative isolate overflow-hidden`. -->
+<div
+  aria-hidden="true"
+  class="pointer-events-none absolute inset-0 -z-10 animate-glow-in overflow-hidden [mask-image:linear-gradient(to_bottom,#000_40%,transparent_92%)]"
+>
+  <div class:list={[lobe, "-top-[20%] -left-[12%] w-[62%] bg-[radial-gradient(closest-side,rgb(186_201_214/0.8),transparent)]"]} />
+  <div class:list={[lobe, "-top-[15%] -right-[16%] w-[56%] bg-[radial-gradient(closest-side,rgb(153_174_193/0.45),transparent)]"]} />
+  <div class:list={[lobe, "top-[22%] left-[22%] w-[56%] bg-[radial-gradient(closest-side,rgb(255_255_255/0.85),transparent)]"]} />
+</div>

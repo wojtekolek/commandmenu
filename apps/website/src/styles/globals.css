@@ -1,74 +1,41 @@
 @import "tailwindcss";
 
-@font-face {
-  font-family: "Open Sauce One";
-  font-weight: 300;
-  font-display: swap;
-  src: url("/fonts/opensauceone/OpenSauceOne-Light.ttf") format("truetype");
-}
+/* Shared with wojtekolek.com (utils/styles/globals.css): warm greys, a
+   slate-blue second voice, Open Sauce One with Rhallisa for the words that get
+   to be decorative. Keep the two in step when either one changes. */
 
+/* WOFF2 subsets taken from wojtekolek.com: Latin and Latin Extended-A, every
+   OpenType feature kept. Only the weights the site uses. */
 @font-face {
   font-family: "Open Sauce One";
   font-weight: 400;
   font-display: swap;
-  src: url("/fonts/opensauceone/OpenSauceOne-Regular.ttf") format("truetype");
+  src: url("/fonts/opensauceone/OpenSauceOne-Regular.woff2") format("woff2");
 }
 
 @font-face {
   font-family: "Open Sauce One";
   font-weight: 500;
   font-display: swap;
-  src: url("/fonts/opensauceone/OpenSauceOne-Medium.ttf") format("truetype");
-}
-
-@font-face {
-  font-family: "Open Sauce One";
-  font-weight: 600;
-  font-display: swap;
-  src: url("/fonts/opensauceone/OpenSauceOne-SemiBold.ttf") format("truetype");
-}
-
-@font-face {
-  font-family: "Open Sauce One";
-  font-weight: 700;
-  font-display: swap;
-  src: url("/fonts/opensauceone/OpenSauceOne-Bold.ttf") format("truetype");
+  src: url("/fonts/opensauceone/OpenSauceOne-Medium.woff2") format("woff2");
 }
 
 @font-face {
   font-family: "Rhallisa";
   font-weight: 400;
   font-display: swap;
-  src: url("/fonts/rhallisa/Rhallisa.ttf") format("truetype");
-}
-
-@keyframes toast-in {
-  from {
-    opacity: 0;
-    transform: translateY(8px);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
+  src: url("/fonts/rhallisa/Rhallisa.woff2") format("woff2");
 }
 
 @theme {
-  --animate-toast-in: toast-in 200ms ease-out;
+  --font-default: "Open Sauce One", ui-sans-serif, system-ui, sans-serif;
+  --font-special: "Rhallisa", ui-serif, Georgia, serif;
 
-  --font-sans: "Open Sauce One", system-ui, sans-serif;
-  --font-display: "Rhallisa", serif;
+  --color-*: initial;
+  --color-white: #fff;
+  --color-black: #000;
+  --color-transparent: transparent;
 
-  --breakpoint-\*: initial;
-  --breakpoint-sm: 480px;
-  --breakpoint-md: 768px;
-  --breakpoint-lg: 1024px;
-  --breakpoint-xl: 1280px;
-  --breakpoint-2xl: 1536px;
-  --breakpoint-3xl: 1660px;
-
-  --color-\*: initial;
-  /* primary */
   --color-primary-0: #fff;
   --color-primary-50: #f4f4f4;
   --color-primary-100: #efefef;
@@ -81,7 +48,7 @@
   --color-primary-800: #464646;
   --color-primary-900: #3d3d3d;
   --color-primary-950: #292929;
-  /* secondary */
+
   --color-secondary-50: #f5f7f9;
   --color-secondary-100: #ebeff3;
   --color-secondary-200: #d6dfe7;
@@ -93,42 +60,103 @@
   --color-secondary-800: #535f7a;
   --color-secondary-900: #464f62;
   --color-secondary-950: #2d323e;
-  /* warning */
-  --color-warning-50: #fffceb;
-  --color-warning-100: #fff7d1;
-  --color-warning-200: #ffea88;
-  --color-warning-300: #ffda4a;
-  --color-warning-400: #ffc720;
-  --color-warning-500: #f9a507;
-  --color-warning-600: #dd7d02;
-  --color-warning-700: #b75806;
-  --color-warning-800: #94430c;
-  --color-warning-900: #7a370d;
-  --color-warning-950: #461c02;
-  /* brand */
-  --color-brand-instagram: #e1306c;
-  --color-brand-linkedin: #0077b5;
-  --color-brand-github: #868e96;
-  --color-brand-x: #000000;
-  /* other */
-  --color-inherit: "inherit";
-  --color-transparent: "transparent";
+
+  --breakpoint-sm: 480px;
+
+  --spacing-21: 5.25rem;
+
+  --ease-sail: cubic-bezier(0.22, 1, 0.36, 1);
+
+  /* Entrances for what is on screen at first paint, in plain CSS so the first
+     frame doesn't wait for the React islands to hydrate. */
+  --animate-rise: rise 1.1s var(--ease-sail) both;
+  --animate-fade-down: fade-down 0.8s var(--ease-sail) 0.2s both;
+  --animate-glow-in: glow-in 2.4s var(--ease-sail) both;
+  --animate-toast-in: toast-in 0.5s var(--ease-sail) both;
+
+  /* Starts faint rather than invisible: browsers don't count anything painted
+     at opacity 0 towards Largest Contentful Paint. */
+  @keyframes rise {
+    from {
+      opacity: 0.15;
+      transform: translateY(20px);
+      filter: blur(6px);
+    }
+  }
+
+  @keyframes fade-down {
+    from {
+      opacity: 0;
+      transform: translateY(-8px);
+    }
+  }
+
+  @keyframes glow-in {
+    from {
+      opacity: 0;
+      transform: scale(0.94);
+    }
+  }
+
+  @keyframes toast-in {
+    from {
+      opacity: 0;
+      transform: translateY(12px) scale(0.96);
+      filter: blur(4px);
+    }
+  }
 }
 
 @layer base {
-  ::selection {
-    color: var(--colors-secondary-100);
-    background-color: var(--colors-secondary-600);
+  html {
+    scroll-behavior: smooth;
+    scroll-padding-top: 6rem;
   }
 
-  ::-moz-selection {
-    color: var(--colors-secondary-100);
-    background-color: var(--colors-secondary-600);
+  ::selection {
+    color: var(--color-secondary-100);
+    background-color: var(--color-secondary-600);
   }
 }
 
-@layer components {
-  .section-spacing {
-    @apply mx-4 px-4 md:mx-8 md:px-8 lg:mx-16 lg:px-16;
+@utility section-spacing {
+  @apply mx-4 px-4 md:mx-8 md:px-8 lg:mx-16 lg:px-16;
+}
+
+@utility text-gradient {
+  @apply inline-block bg-linear-to-r from-primary-600 to-secondary-400 bg-clip-text text-transparent;
+}
+
+/* Film grain: an SVG turbulence tile, so there is no image to fetch and it
+   stays sharp at any density. */
+@utility grain {
+  &::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+    opacity: 0.12;
+    mix-blend-mode: overlay;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.85' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+  }
+}
+
+/* Shiki paints its own background; the code card supplies one instead. */
+.astro-code {
+  background-color: transparent !important;
+}
+
+/* Entrances and reveals in React follow Reduce Motion through MotionConfig.
+   This covers what is left in CSS. */
+@media (prefers-reduced-motion: reduce) {
+  html {
+    scroll-behavior: auto;
+  }
+
+  .animate-rise,
+  .animate-fade-down,
+  .animate-glow-in,
+  .animate-toast-in {
+    animation: none;
   }
 }

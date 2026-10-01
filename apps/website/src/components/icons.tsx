@@ -1,5 +1,7 @@
 import type { FunctionComponent, SVGProps } from "react";
 
+// Line icons drawn on lucide's 24px grid. Decorative by default: give one a
+// label and drop `aria-hidden` if it ever carries meaning on its own.
 const Icon = (d: string): FunctionComponent<SVGProps<SVGSVGElement>> => {
   const Component: FunctionComponent<SVGProps<SVGSVGElement>> = (props) => (
     <svg
@@ -7,7 +9,8 @@ const Icon = (d: string): FunctionComponent<SVGProps<SVGSVGElement>> => {
       viewBox="0 0 24 24"
       fill="none"
       stroke="currentColor"
-      strokeWidth={2}
+      strokeWidth={1.75}
+      aria-hidden="true"
       strokeLinecap="round"
       strokeLinejoin="round"
       {...props}
@@ -24,7 +27,10 @@ export const FileIcon = Icon(
 );
 export const SearchIcon = Icon("M11 3a8 8 0 1 0 0 16 8 8 0 0 0 0-16z M21 21l-4.35-4.35");
 export const SettingsIcon = Icon(
-  "M12 1v2 M12 21v2 M4.22 4.22l1.42 1.42 M18.36 18.36l1.42 1.42 M1 12h2 M21 12h2 M4.22 19.78l1.42-1.42 M18.36 5.64l1.42-1.42",
+  "M20 7h-9 M14 17H5 M17 14a3 3 0 1 0 0 6 3 3 0 0 0 0-6z M7 4a3 3 0 1 0 0 6 3 3 0 0 0 0-6z",
+);
+export const MonitorIcon = Icon(
+  "M4 3h16a2 2 0 0 1 2 2v10a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2z M8 21h8 M12 17v4",
 );
 export const UserIcon = Icon(
   "M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2 M12 3a4 4 0 1 0 0 8 4 4 0 0 0 0-8z",
@@ -54,3 +60,7 @@ export const BellIcon = Icon(
 );
 export const ShieldIcon = Icon("M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z");
 export const ChevronRightIcon = Icon("M9 18l6-6-6-6");
+export const CheckIcon = Icon("M20 6 9 17l-5-5");
+export const ArrowUpIcon = Icon("m5 12 7-7 7 7 M12 19V5");
+export const ArrowUpRightIcon = Icon("M7 7h10v10 M7 17 17 7");
+export const CornerDownLeftIcon = Icon("M9 10l-5 5 5 5 M20 4v7a4 4 0 0 1-4 4H4");

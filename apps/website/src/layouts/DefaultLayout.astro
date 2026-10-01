@@ -1,5 +1,7 @@
 ---
-import { Copyright } from "../components/Copyright";
+import Footer from "../components/Footer.astro";
+import { TopMenu } from "../components/TopMenu";
+import "../styles/globals.css";
 
 type Props = {
   title: string;
@@ -10,10 +12,14 @@ const canonicalUrl = Astro.url.href;
 const siteName = "Command Menu";
 ---
 
-<html lang="en" class="bg-primary-50 selection:bg-secondary-900 selection:text-primary-100 font-sans font-normal text-primary-950 antialiased">
+<html lang="en" class="bg-primary-50 font-default text-primary-950 antialiased">
 	<head>
 		<meta charset="utf-8" />
-		<meta name="viewport" content="width=device-width" />
+		<meta name="viewport" content="width=device-width, initial-scale=1" />
+
+		<!-- The wordmark is the first thing painted; don't let its font be the last thing fetched. -->
+		<link rel="preload" href="/fonts/rhallisa/Rhallisa.woff2" as="font" type="font/woff2" crossorigin />
+		<link rel="preload" href="/fonts/opensauceone/OpenSauceOne-Regular.woff2" as="font" type="font/woff2" crossorigin />
 
 		<!-- Favicons -->
 		<link rel="icon" type="image/svg+xml" href="/favicon.svg" />
@@ -43,13 +49,13 @@ const siteName = "Command Menu";
 		<meta name="twitter:description" content={description} />
 		<meta name="twitter:image" content="/og.png" />
 	</head>
-	<body class="flex min-h-screen flex-col 2xl:mx-auto 2xl:max-w-[1440px]">
-  	<main class="flex-1 pt-4 pb-11 md:pt-8 lg:pt-11 lg:pb-21">
-  		<slot />
-  	</main>
-	</body>
+	<body id="top" class="flex min-h-svh flex-col overflow-x-clip 2xl:mx-auto 2xl:max-w-[1440px]">
+		<TopMenu client:load />
 
- <footer>
-    <Copyright client:load />
-  </footer>
+		<main class="flex-1 pt-20">
+			<slot />
+		</main>
+
+		<Footer />
+	</body>
 </html>

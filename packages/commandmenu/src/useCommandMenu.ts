@@ -1,209 +1,309 @@
 import {
   type ChangeEventHandler,
   type KeyboardEventHandler,
+  type MouseEvent,
   useCallback,
+  useId,
   useLayoutEffect,
   useMemo,
   useRef,
   useState,
 } from "react";
+import { buildShortcuts, isComposing, isFromSearch, matchShortcut } from "./keyboard";
+import { buildEntries, dropKnownIds, EMPTY, layoutList, toGroups } from "./list";
+import { revealOption } from "./scroll";
+import {
+  firstItem,
+  INITIAL_SELECTION,
+  isAtFirst,
+  locate,
+  type Selection,
+  sameSelection,
+  step,
+} from "./selection";
 import type {
-  AsyncResultsGroup,
   Config,
-  Group,
+  GroupOf,
+  ItemProps,
+  ListProps,
+  MenuProps,
   PreparedGroup,
   PreparedItem,
-  Selection,
+  SearchProps,
+  UseCommandMenuArgs,
+  UseCommandMenuReturn,
 } from "./types";
 
-const EMPTY_ITEMS: Config[] = [];
+export const isGroupList = <T extends Config>(
+  list: readonly (PreparedGroup<T> | PreparedItem<T>)[],
+): list is PreparedGroup<T>[] => list.length > 0 && !("itemProps" in list[0]);
 
-export const isGroupList = (list: (PreparedGroup | PreparedItem)[]): list is PreparedGroup[] =>
-  (list as PreparedGroup[])[0]?.items !== undefined;
+const optionId = (baseId: string, id: string) => `${baseId}-option-${encodeURIComponent(id)}`;
 
-type CommonArgs<T extends Config[]> = {
-  config: T;
-  asyncResultsGroup?: AsyncResultsGroup;
-  onKeyDown?: KeyboardEventHandler<HTMLElement>;
-  onKeyUp?: KeyboardEventHandler<HTMLElement>;
-  onSearchChange?: (query: string) => void;
-};
+/** Shared by every item: pressing one must not move focus out of the search input. */
+const keepFocus = (e: MouseEvent) => e.preventDefault();
 
-type UseCommandMenuReturn = {
-  list: PreparedGroup[] | PreparedItem[];
-  selection: Selection;
-  menuProps: {
-    onKeyDown: KeyboardEventHandler<HTMLDivElement>;
-    onKeyUp: KeyboardEventHandler<HTMLDivElement>;
+const prepareItem = <I extends Config>(
+  item: I,
+  domId: string,
+  select: (item: I) => void,
+  hover: (item: I) => void,
+): PreparedItem<I> => {
+  const { onSelect: _onSelect, ...rest } = item;
+  const enabled = !item.disabled;
+  const itemProps: ItemProps = {
+    id: domId,
+    role: "option",
+    "aria-disabled": enabled ? undefined : true,
+    onClick: enabled ? () => select(item) : undefined,
+    onMouseDown: keepFocus,
+    onPointerMove: enabled ? () => hover(item) : undefined,
   };
-  searchProps: { value: string; onChange: ChangeEventHandler<HTMLInputElement> };
-  searchQuery: string;
-  isAsyncLoading: boolean;
+  // TS can't follow `PreparedItem`'s distribution over a generic item type.
+  return { ...rest, itemProps } as unknown as PreparedItem<I>;
 };
 
-export function useCommandMenu<T extends Config[]>(
-  args: { groups: Group<T>[] } & CommonArgs<T>,
-): UseCommandMenuReturn & { list: PreparedGroup[] };
+/** What the stable handlers read: the latest render's values and callbacks. */
+type Latest<T extends Config, A extends Config> = Pick<
+  UseCommandMenuArgs<T, A>,
+  "onKeyDown" | "onKeyUp" | "onSearchChange"
+> & {
+  flat: readonly (T | A)[];
+  selectedItem: T | A | undefined;
+  query: string;
+  shortcuts: Map<string, T>;
+};
 
-export function useCommandMenu<T extends Config[]>(
-  args: CommonArgs<T>,
-): UseCommandMenuReturn & { list: PreparedItem[] };
+export function useCommandMenu<T extends Config, A extends Config = T>(
+  args: UseCommandMenuArgs<T, A> & { groups: readonly GroupOf<NoInfer<T>["id"]>[] },
+): UseCommandMenuReturn<PreparedGroup<T | A>[]>;
 
-export function useCommandMenu<T extends Config[]>({
+export function useCommandMenu<T extends Config, A extends Config = T>(
+  args: UseCommandMenuArgs<T, A> & { groups?: undefined },
+): UseCommandMenuReturn<PreparedItem<T | A>[]>;
+
+// `groups` that may be undefined (say, an optional prop) get the union; `isGroupList` narrows it.
+export function useCommandMenu<T extends Config, A extends Config = T>(
+  args: UseCommandMenuArgs<T, A>,
+): UseCommandMenuReturn<PreparedGroup<T | A>[] | PreparedItem<T | A>[]>;
+
+export function useCommandMenu<T extends Config, A extends Config = T>({
   config,
   groups,
   asyncResultsGroup,
   onKeyDown,
   onKeyUp,
   onSearchChange,
-}: { groups?: Group<T>[] } & CommonArgs<T>): UseCommandMenuReturn {
-  const selectedRef = useRef<HTMLLIElement>(null);
+}: UseCommandMenuArgs<T, A>): UseCommandMenuReturn<PreparedGroup<T | A>[] | PreparedItem<T | A>[]> {
+  type Item = T | A;
+
+  // State
+
+  const baseId = useId();
+  const listId = `${baseId}-list`;
   const [query, setQuery] = useState("");
-  const [selectedIdx, setSelectedIdx] = useState(0);
+  const [selection, setSelectionState] = useState(INITIAL_SELECTION);
+  // Mirrors `selection` synchronously, so handlers can skip updates that change nothing and
+  // several key presses in one batch still build on each other.
+  const selectionRef = useRef(selection);
+  const listRef = useRef<HTMLElement | null>(null);
+  // One mutable box for the stable handlers, written in a layout effect, so it's current before
+  // any event can reach the new DOM.
+  const [latest] = useState(() => ({}) as Latest<T, A>);
+  // One `PreparedItem` per item for the life of the menu, so a row that survives a keystroke
+  // keeps its identity and a memoized row doesn't re-render. Items must be treated as immutable.
+  // Groups are cached the same way, by id, and reused while their rows stay the same.
+  const [itemCache] = useState(() => new WeakMap<Item, PreparedItem<Item>>());
+  const [groupCache] = useState(() => new Map<string, PreparedGroup<Item>>());
 
-  const filteredConfig = useMemo(() => {
-    if (!query) return config;
-    const q = query.toLowerCase();
-    return config.filter((item) => item.label.toLowerCase().includes(q)) as T;
-  }, [config, query]);
+  // What's on the menu. `entries` and `shortcuts` depend only on `config` and `groups`, so
+  // typing never rebuilds them.
 
-  const shortcuts = useMemo(
-    () => Object.fromEntries(config.filter((i) => i.shortcut).map((i) => [i.shortcut, i.onSelect])),
-    [config],
+  const entries = useMemo(() => buildEntries(config, groups), [config, groups]);
+  const shortcuts = useMemo(() => buildShortcuts(entries.map((e) => e.item)), [entries]);
+
+  const results = asyncResultsGroup?.items;
+  const resultsId = asyncResultsGroup?.id;
+  const resultsLabel = asyncResultsGroup?.label;
+  // Returns the shared `EMPTY` for no results, so `items: data ?? []` doesn't rebuild the list.
+  const asyncItems = useMemo(() => dropKnownIds(results ?? EMPTY, entries), [results, entries]);
+
+  const { flat, spans } = useMemo(
+    () =>
+      layoutList({
+        entries,
+        query,
+        grouped: !!groups,
+        results: asyncItems,
+        resultsId,
+        resultsLabel,
+      }),
+    [entries, query, groups, asyncItems, resultsId, resultsLabel],
   );
 
-  const asyncItems = asyncResultsGroup?.items ?? EMPTY_ITEMS;
-  const allItems = useMemo(() => [...filteredConfig, ...asyncItems], [filteredConfig, asyncItems]);
+  // Selection
 
-  const maxIdx = Math.max(0, allItems.length - 1);
-  const safeIdx = Math.min(selectedIdx, maxIdx);
+  const selectedItem: Item | undefined = flat[locate(flat, selection)];
+  const selectedDomId = selectedItem && optionId(baseId, selectedItem.id);
 
-  const currentRef = useRef({ allItems, safeIdx, maxIdx });
-  currentRef.current = { allItems, safeIdx, maxIdx };
-
-  // biome-ignore lint/correctness/useExhaustiveDependencies: safeIdx triggers scroll on selection change
   useLayoutEffect(() => {
-    const el = selectedRef.current;
-    if (!el) return;
-    const isFirst = el.parentNode?.firstElementChild === el;
-    (isFirst ? el.parentElement?.previousElementSibling : el)?.scrollIntoView({ block: "nearest" });
-  }, [safeIdx]);
-
-  const handleReset = useCallback(() => {
-    setQuery("");
-    setSelectedIdx(0);
-  }, []);
-
-  const handleSelect = useCallback(
-    (onSelect?: () => void) => () => {
-      onSelect?.();
-      handleReset();
-    },
-    [handleReset],
-  );
-
-  const handleSearch: ChangeEventHandler<HTMLInputElement> = useCallback(
-    (e) => {
-      setQuery(e.target.value);
-      setSelectedIdx(0);
-      onSearchChange?.(e.target.value);
-    },
-    [onSearchChange],
-  );
-
-  const move = useCallback((dir: 1 | -1) => {
-    setSelectedIdx((i) => {
-      const max = currentRef.current.maxIdx;
-      return Math.max(0, Math.min(max, i + dir));
+    Object.assign(latest, {
+      flat,
+      selectedItem,
+      query,
+      shortcuts,
+      onKeyDown,
+      onKeyUp,
+      onSearchChange,
     });
+  });
+
+  useLayoutEffect(() => {
+    if (selection.reveal && selectedDomId && listRef.current) {
+      revealOption(listRef.current, selectedDomId);
+    }
+  }, [selection, selectedDomId]);
+
+  const setSelection = useCallback((next: Selection) => {
+    selectionRef.current = next;
+    setSelectionState(next);
   }, []);
 
-  const handleKeyDown: KeyboardEventHandler<HTMLDivElement> = useCallback(
-    (e) => {
-      const { shiftKey, ctrlKey, metaKey, code, key } = e;
+  // Handlers. All stable: they read current values from `latest`.
 
-      if (metaKey || ctrlKey) {
-        const shortcutKey = shiftKey ? `⇧ ${code.replace("Key", "")}` : code.replace("Key", "");
-        const handler = shortcuts[shortcutKey];
-        if (handler) {
-          e.preventDefault();
-          e.stopPropagation();
-          handleSelect(handler)();
-          return;
-        }
+  const select = useCallback(
+    (item: Config | undefined) => {
+      if (!item) return;
+      item.onSelect();
+      const { query, onSearchChange } = latest;
+      setQuery("");
+      // Already back at the top with nothing typed: resetting again would only re-render.
+      if (query || !isAtFirst(selectionRef.current)) setSelection(firstItem());
+      if (query) onSearchChange?.("");
+    },
+    [latest, setSelection],
+  );
+
+  const hover = useCallback(
+    (item: Item) => {
+      // Pointer moves fire constantly; staying on the same item must not even schedule work.
+      if (latest.selectedItem === item) return;
+      setSelection({ id: item.id, idx: latest.flat.indexOf(item), reveal: false });
+    },
+    [latest, setSelection],
+  );
+
+  const move = useCallback(
+    (dir: 1 | -1) => {
+      const next = step(latest.flat, selectionRef.current, dir);
+      // Already there (say, at the end of the list) and already in view: nothing to do.
+      if (!sameSelection(next, selectionRef.current)) setSelection(next);
+    },
+    [latest, setSelection],
+  );
+
+  const handleSearch = useCallback<ChangeEventHandler<HTMLInputElement>>(
+    (e) => {
+      const { value } = e.target;
+      setQuery(value);
+      setSelection(firstItem());
+      latest.onSearchChange?.(value);
+    },
+    [latest, setSelection],
+  );
+
+  const handleKeyDown = useCallback<KeyboardEventHandler<HTMLElement>>(
+    (e) => {
+      latest.onKeyDown?.(e);
+      if (e.defaultPrevented || isComposing(e)) return;
+
+      if (e.metaKey || e.ctrlKey) {
+        // A Cmd/Ctrl combo without a shortcut belongs to the browser or the input.
+        const item = e.altKey ? undefined : matchShortcut(latest.shortcuts, e);
+        if (!item) return;
+        e.preventDefault();
+        e.stopPropagation();
+        if (!e.repeat) select(item);
+        return;
       }
 
-      onKeyDown?.(e);
-      if (e.defaultPrevented) return;
+      if (e.altKey || !isFromSearch(e, listId)) return;
 
-      if (key === "ArrowDown") {
+      if (e.key === "ArrowDown") {
         e.preventDefault();
         move(1);
-      } else if (key === "ArrowUp") {
+      } else if (e.key === "ArrowUp") {
         e.preventDefault();
         move(-1);
-      } else if (key === "Enter" && !e.nativeEvent.isComposing) {
+      } else if (e.key === "Enter") {
         e.preventDefault();
-        const { allItems: items, safeIdx: idx } = currentRef.current;
-        handleSelect(items[idx]?.onSelect)();
+        if (!e.repeat) select(latest.selectedItem);
       }
     },
-    [shortcuts, handleSelect, move, onKeyDown],
+    [latest, listId, select, move],
   );
 
-  const handleKeyUp: KeyboardEventHandler<HTMLDivElement> = useCallback(
-    (e) => onKeyUp?.(e),
-    [onKeyUp],
+  const handleKeyUp = useCallback<KeyboardEventHandler<HTMLElement>>(
+    (e) => latest.onKeyUp?.(e),
+    [latest],
   );
+
+  // What gets rendered
 
   const prepared = useMemo(
-    (): PreparedItem[] =>
-      allItems.map(({ onSelect, disabled, ...rest }, i) => ({
-        ...rest,
-        onClick: disabled ? undefined : handleSelect(onSelect),
-        onPointerMove: () => setSelectedIdx(i),
-      })),
-    [allItems, handleSelect],
+    () =>
+      flat.map((item) => {
+        let prepared = itemCache.get(item);
+        if (!prepared) {
+          prepared = prepareItem(item, optionId(baseId, item.id), select, hover);
+          itemCache.set(item, prepared);
+        }
+        return prepared;
+      }),
+    [flat, itemCache, baseId, select, hover],
   );
 
-  const list = useMemo(() => {
-    if (!groups && !asyncResultsGroup) return prepared;
+  const list = useMemo(
+    () => (spans ? toGroups(spans, prepared, groupCache) : prepared),
+    [spans, prepared, groupCache],
+  );
 
-    const itemById = new Map(prepared.map((p) => [p.id, p]));
-    const filteredIds = new Set(filteredConfig.map((c) => c.id));
-    const result: PreparedGroup[] = [];
+  // Props to spread
 
-    if (groups) {
-      for (const g of groups) {
-        const items = g.items.filter((id) => filteredIds.has(id)).map((id) => itemById.get(id)!);
-        if (items.length) result.push({ id: g.id, label: g.label, items });
-      }
-    }
+  const menuProps = useMemo(
+    (): MenuProps => ({ onKeyDown: handleKeyDown, onKeyUp: handleKeyUp }),
+    [handleKeyDown, handleKeyUp],
+  );
 
-    if (asyncResultsGroup && asyncItems.length) {
-      const items = asyncItems.map((a) => itemById.get(a.id)!).filter(Boolean);
-      if (items.length) {
-        result.push({ id: asyncResultsGroup.id, label: asyncResultsGroup.label, items });
-      }
-    }
+  const searchProps = useMemo(
+    (): SearchProps => ({
+      value: query,
+      onChange: handleSearch,
+      role: "combobox",
+      "aria-expanded": true,
+      "aria-controls": listId,
+      "aria-activedescendant": selectedDomId,
+      "aria-autocomplete": "list",
+      autoComplete: "off",
+    }),
+    [query, handleSearch, listId, selectedDomId],
+  );
 
-    return result.length ? result : prepared;
-  }, [groups, asyncResultsGroup, prepared, filteredConfig, asyncItems]);
+  const setListRef = useCallback((element: HTMLElement | null) => {
+    listRef.current = element;
+  }, []);
 
-  const selection: Selection = useMemo(
-    () => ({ id: allItems[safeIdx]?.id, ref: selectedRef }),
-    [allItems, safeIdx],
+  const listProps = useMemo(
+    (): ListProps => ({ id: listId, role: "listbox", ref: setListRef }),
+    [listId, setListRef],
   );
 
   return {
     list,
-    selection,
-    menuProps: useMemo(
-      () => ({ onKeyDown: handleKeyDown, onKeyUp: handleKeyUp }),
-      [handleKeyDown, handleKeyUp],
-    ),
-    searchProps: useMemo(() => ({ value: query, onChange: handleSearch }), [query, handleSearch]),
+    selectedId: selectedItem?.id,
+    menuProps,
+    searchProps,
+    listProps,
     searchQuery: query,
-    isAsyncLoading: asyncResultsGroup?.isLoading ?? false,
   };
 }

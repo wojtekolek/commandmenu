@@ -6,3 +6,20 @@ find the full documentation for it [in our repository](https://github.com/change
 
 We have a quick list of common questions to get you started engaging with this project in
 [our documentation](https://github.com/changesets/changesets/blob/main/docs/common-questions.md)
+
+## Releasing `commandmenu`
+
+Releases take two merges. That's how Changesets works, not a fault:
+
+1. A PR that should ship carries a changeset: run `pnpm changeset`, pick the bump, describe the change, and commit the `.changeset/*.md` file it writes.
+2. When that PR lands on `master`, the Release workflow doesn't publish yet. It opens (or updates) a **"Version Packages"** PR from `changeset-release/master`. That PR bumps `packages/commandmenu/package.json` and writes `CHANGELOG.md`.
+3. Merging the "Version Packages" PR runs the Release workflow again. With no changesets left, it builds, lints, typechecks and tests the package, then publishes to npm through trusted publishing and pushes the `commandmenu@x.y.z` tag and GitHub release.
+
+Pushes without a changeset publish only if `package.json` holds a version npm doesn't have yet, which is how the 0.5.x releases went out.
+
+The workflow needs these to be in place:
+
+- Settings → Actions → General → Workflow permissions: "Allow GitHub Actions to create and approve pull requests" is on, or step 2 fails.
+- npm → `commandmenu` → Settings → Trusted publishing points at `wojtekolek/commandmenu`, workflow `release.yml`, environment `Production`.
+
+The "Version Packages" PR is opened with the workflow's own token, so CI doesn't run on it. Don't make CI checks required on `master` without also giving the Release workflow a token that can trigger them.

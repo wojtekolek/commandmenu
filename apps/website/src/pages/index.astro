@@ -1,17 +1,15 @@
 ---
-import Header from "../components/Header.astro";
+import Features from "../components/Features.astro";
+import Hero from "../components/Hero.astro";
+import Usage from "../components/Usage.astro";
 import DefaultLayout from "../layouts/DefaultLayout.astro";
-import { Demo } from "../modules/Demo";
-import "../styles/globals.css";
+import { site } from "../utils/site";
 
-const Description = "Headless UI for building command menus in React.";
-const Title = `Command Menu — ${Description}`;
+const title = `${site.name} — ${site.description}`;
 ---
 
-<DefaultLayout title={Title} description={Description}>
-  <Header />
-
-  <div class="grid place-items-center content-center px-4">
-    <Demo client:load />
-  </div>
+<DefaultLayout title={title} description={site.description}>
+  <Hero />
+  <Features />
+  <Usage />
 </DefaultLayout>

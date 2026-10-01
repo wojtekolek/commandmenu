@@ -1,4 +1,5 @@
 import type { Config, Group } from "commandmenu";
+import type { ElementType } from "react";
 import {
   BellIcon,
   BookIcon,
@@ -7,6 +8,7 @@ import {
   GlobeIcon,
   HomeIcon,
   MailIcon,
+  MonitorIcon,
   MoonIcon,
   PaletteIcon,
   SearchIcon,
@@ -15,20 +17,25 @@ import {
   SunIcon,
   TerminalIcon,
   UserIcon,
-} from "./icons";
+} from "../../../components/icons";
+
+export type MenuItem = Config & { icon: ElementType; description: string };
 
 export type MenuLevel = {
   label: string;
-  config: Config[];
-  groups?: Group<Config[]>[];
+  config: MenuItem[];
+  groups?: Group<MenuItem>[];
 };
 
 export const SUBMENU_IDS = new Set(["settings", "theme"]);
 
+// Shortcuts stay clear of the ones a browser keeps for itself (⌘N and ⌘T open
+// windows and tabs whatever the page does) and of ⌘C, which would swallow
+// copying text out of the search field.
 export const createRootConfig = (
   leaf: (label: string) => () => void,
   openSubmenu: (level: MenuLevel) => void,
-): Config[] => [
+): MenuItem[] => [
   {
     id: "home",
     icon: HomeIcon,
@@ -59,12 +66,12 @@ export const createRootConfig = (
     onSelect: leaf("Opened Contact"),
   },
   {
-    id: "new-file",
+    id: "open-file",
     icon: FileIcon,
-    label: "New File",
-    description: "Create a new file",
-    shortcut: "N",
-    onSelect: leaf("Created New File"),
+    label: "Open File",
+    description: "Open a project file",
+    shortcut: "O",
+    onSelect: leaf("Opened File"),
   },
   {
     id: "search",
@@ -79,7 +86,7 @@ export const createRootConfig = (
     icon: CopyIcon,
     label: "Copy Link",
     description: "Copy current URL",
-    shortcut: "C",
+    shortcut: "K",
     onSelect: leaf("Link Copied"),
   },
   {
@@ -87,7 +94,7 @@ export const createRootConfig = (
     icon: TerminalIcon,
     label: "Open Terminal",
     description: "Launch terminal",
-    shortcut: "T",
+    shortcut: "J",
     onSelect: leaf("Opened Terminal"),
   },
   {
@@ -125,7 +132,7 @@ export const createRootConfig = (
                   },
                   {
                     id: "system",
-                    icon: SettingsIcon,
+                    icon: MonitorIcon,
                     label: "System",
                     description: "Follow system",
                     onSelect: leaf("Switched to System theme"),
@@ -166,11 +173,11 @@ export const createRootConfig = (
   },
 ];
 
-export const ROOT_GROUPS: Group<Config[]>[] = [
+export const ROOT_GROUPS: Group<MenuItem>[] = [
   { id: "navigation", label: "Navigation", items: ["home", "docs", "about", "contact"] },
   {
     id: "actions",
     label: "Actions",
-    items: ["new-file", "search", "copy", "terminal", "settings"],
+    items: ["open-file", "search", "copy", "terminal", "settings"],
   },
 ];
