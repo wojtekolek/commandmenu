@@ -29,3 +29,7 @@ yarn-error.log*
 
 # turbo
 .turbo
+
+# copied from the repo root at pack time (see packages/commandmenu "prepack")
+packages/commandmenu/README.md
+packages/commandmenu/LICENSE

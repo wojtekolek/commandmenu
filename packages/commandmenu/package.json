@@ -16,13 +16,19 @@
   ],
   "files": [
     "dist",
-    "package.json"
+    "CHANGELOG.md"
   ],
+  "sideEffects": false,
   "exports": {
     ".": {
-      "require": "./dist/index.js",
-      "types": "./dist/index.d.ts",
-      "import": "./dist/index.mjs"
+      "import": {
+        "types": "./dist/index.d.mts",
+        "default": "./dist/index.mjs"
+      },
+      "require": {
+        "types": "./dist/index.d.ts",
+        "default": "./dist/index.js"
+      }
     }
   },
   "main": "./dist/index.js",
@@ -34,9 +40,12 @@
   "scripts": {
     "build": "tsup src/index.ts",
     "dev": "tsup src/index.ts --watch",
+    "typecheck": "tsc --noEmit",
     "test": "vitest run",
     "test:watch": "vitest",
-    "clean": "rm -rf .turbo && rm -rf node_modules && rm -rf dist"
+    "bench": "vitest bench --run",
+    "clean": "rm -rf .turbo && rm -rf node_modules && rm -rf dist",
+    "prepack": "cp ../../README.md ../../LICENSE ."
   },
   "devDependencies": {
     "@testing-library/dom": "10.4.1",
@@ -52,7 +61,7 @@
   },
   "peerDependencies": {
     "react": "^19.1.0",
-    "typescript": ">=5.0.0"
+    "typescript": ">=5.4.0"
   },
   "peerDependenciesMeta": {
     "typescript": {
