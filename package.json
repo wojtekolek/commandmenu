@@ -9,9 +9,10 @@
     "lint:fix": "biome check --write .",
     "test": "turbo run test",
     "test:watch": "turbo run test:watch",
+    "typecheck": "turbo run typecheck",
     "changeset": "changeset",
     "version-package": "changeset version",
-    "publish-package": "turbo run build lint --filter=website^... && changeset publish"
+    "publish-package": "turbo run build lint typecheck test --filter=website^... && changeset publish"
   },
   "devDependencies": {
     "@biomejs/biome": "2.4.12",
