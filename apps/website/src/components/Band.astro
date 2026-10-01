@@ -1,0 +1,22 @@
+---
+type Props = {
+  id?: string;
+  class?: string;
+};
+
+const { id, class: className } = Astro.props;
+---
+
+<!-- One band of the page, after wojtekolek.com's: a full-bleed hairline on top
+     and the content in the page column. The rules between bands carry the
+     structure, so the sections themselves can stay bare. -->
+<section
+  id={id}
+  class:list={[
+    "section-spacing relative scroll-mt-24 py-28 md:py-36",
+    "before:absolute before:top-0 before:right-[calc(50%-50vw)] before:left-[calc(50%-50vw)] before:h-px before:bg-primary-200",
+    className,
+  ]}
+>
+  <slot />
+</section>

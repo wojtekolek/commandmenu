@@ -1,0 +1,111 @@
+---
+import { site } from "../utils/site";
+import { bandInset, cn, eyebrow } from "../utils/styles";
+import { Heart } from "./Heart";
+import { ArrowUpIcon, ArrowUpRightIcon } from "./icons";
+
+const PACKAGE = [
+  { label: "GitHub", href: site.githubUrl },
+  { label: "npm", href: site.npmUrl },
+  { label: "Issues", href: `${site.githubUrl}/issues` },
+];
+
+const ELSEWHERE = [
+  { label: "wojtekolek.com", href: site.authorUrl },
+  { label: "GitHub", href: "https://github.com/wojtekolek" },
+  { label: "X", href: "https://x.com/Wojtek0lek" },
+];
+
+const columnLabel = cn(eyebrow, "mb-5 text-primary-400");
+const columnLink =
+  "group inline-flex items-center gap-1 text-primary-400 text-sm transition-colors duration-200 hover:text-primary-50";
+const arrow =
+  "size-3.5 opacity-50 transition-transform duration-300 ease-sail group-hover:translate-x-0.5 group-hover:-translate-y-0.5";
+const year = new Date().getFullYear();
+---
+
+<!-- The same dark as wojtekolek.com's footer, so the page closes the way that
+     one does: full-bleed, a slate glow from the top edge and film grain. -->
+<footer
+  class="grain relative mx-[calc(50%-50vw)] overflow-hidden bg-primary-950 pt-24 pb-12 text-primary-300 lg:pt-32 lg:pb-16"
+>
+  <div
+    aria-hidden="true"
+    class="pointer-events-none absolute inset-x-0 -top-48 h-[28rem] bg-[radial-gradient(ellipse_at_center,rgb(128_151_177/0.22),transparent_65%)]"
+  >
+  </div>
+
+  <div class:list={[bandInset, "relative"]}>
+    <div class="grid grid-cols-2 gap-x-10 gap-y-14 md:grid-cols-4 md:gap-16">
+      <div class="col-span-2 flex flex-col">
+        <p class={columnLabel}>Get started</p>
+        <p class="max-w-md text-balance text-3xl text-primary-50 tracking-tight lg:text-4xl">
+          Design the menu, <em class="text-primary-500 not-italic">leave the keys to us.</em>
+        </p>
+        <a
+          href={`${site.githubUrl}#readme`}
+          target="_blank"
+          rel="noreferrer"
+          class="group mt-8 inline-flex w-fit items-center gap-2 text-lg text-primary-200 underline decoration-primary-700 underline-offset-8 transition-colors duration-300 hover:decoration-primary-300"
+        >
+          Read the docs
+          <ArrowUpRightIcon
+            className="size-4 opacity-60 transition-transform duration-300 ease-sail group-hover:translate-x-0.5 group-hover:-translate-y-0.5"
+          />
+        </a>
+      </div>
+
+      <nav aria-label="Package">
+        <p class={columnLabel}>Package</p>
+        <ul class="flex flex-col gap-3">
+          {
+            PACKAGE.map(({ label, href }) => (
+              <li>
+                <a href={href} target="_blank" rel="noreferrer" class={columnLink}>
+                  {label}
+                  <ArrowUpRightIcon className={arrow} />
+                </a>
+              </li>
+            ))
+          }
+        </ul>
+      </nav>
+
+      <div>
+        <p class={columnLabel}>Elsewhere</p>
+        <ul class="flex flex-col gap-3">
+          {
+            ELSEWHERE.map(({ label, href }) => (
+              <li>
+                <a href={href} target="_blank" rel="noreferrer" class={columnLink}>
+                  {label}
+                  <ArrowUpRightIcon className={arrow} />
+                </a>
+              </li>
+            ))
+          }
+        </ul>
+      </div>
+    </div>
+
+    <div
+      class="mt-20 flex flex-col justify-between gap-4 border-primary-800 border-t pt-8 text-primary-400 text-xs md:flex-row md:items-center"
+    >
+      <p class="flex items-center gap-1.5">
+        © {year} · made with
+        <Heart client:visible />
+        by
+        <a href={site.authorUrl} class="text-primary-300 transition-colors duration-200 hover:text-primary-50">
+          Wojtek Olek
+        </a>
+      </p>
+      <a
+        href="#top"
+        class="group inline-flex w-fit items-center gap-1.5 transition-colors duration-200 hover:text-primary-50"
+      >
+        Back to top
+        <ArrowUpIcon className="size-3.5 transition-transform duration-300 ease-sail group-hover:-translate-y-0.5" />
+      </a>
+    </div>
+  </div>
+</footer>

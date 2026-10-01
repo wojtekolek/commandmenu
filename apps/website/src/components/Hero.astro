@@ -1,0 +1,45 @@
+---
+import { Demo } from "../modules/Demo";
+import { site } from "../utils/site";
+import { eyebrow } from "../utils/styles";
+import AmbientLight from "./AmbientLight.astro";
+import { CopyInstallButton } from "./CopyInstallButton";
+---
+
+<!-- The opening stage, after wojtekolek.com's: the gradient card lit from
+     within, the name centred in it, and the demo standing in the light so it
+     is the first thing to try. Entrances are CSS, so the name paints before
+     any island hydrates. -->
+<header
+  class="section-spacing relative isolate flex flex-col items-center overflow-hidden rounded-t-3xl bg-linear-to-b from-secondary-200/50 to-transparent pt-16 pb-28 text-center shadow-[inset_0_1px_0_rgb(255_255_255/0.7)] lg:pt-28 lg:pb-36"
+>
+  <AmbientLight />
+
+  <p class:list={[eyebrow, "animate-rise"]}>A headless React hook</p>
+
+  <h1
+    class="mt-6 animate-rise px-[0.1em] font-special text-[clamp(3.75rem,11vw,9rem)] text-primary-950 leading-none tracking-widest drop-shadow-sm"
+  >
+    {site.name}
+  </h1>
+
+  <div class="mt-8 flex animate-rise flex-col items-center gap-1 [animation-delay:120ms] lg:mt-12">
+    <p class="text-balance text-2xl text-primary-900 tracking-tight lg:text-4xl">
+      Build your own command menu
+    </p>
+    <p class="text-gradient text-xl lg:text-3xl lg:leading-[2.6rem]">
+      Headless, keyboard-first, fully typed
+    </p>
+  </div>
+
+  <div class="mt-10 animate-rise [animation-delay:200ms]">
+    <CopyInstallButton client:load packageName={site.packageName} />
+  </div>
+
+  <div
+    id="demo"
+    class="mt-16 w-full max-w-3xl scroll-mt-24 animate-rise text-start [animation-delay:280ms] lg:mt-21"
+  >
+    <Demo client:load />
+  </div>
+</header>

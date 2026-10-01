@@ -1,0 +1,104 @@
+---
+import { Code } from "astro:components";
+import { codeTheme } from "../utils/codeTheme";
+import { site } from "../utils/site";
+import { cn, eyebrow, h2 } from "../utils/styles";
+import Band from "./Band.astro";
+import { ArrowUpRightIcon } from "./icons";
+
+const SNIPPET = `import { type Config, useCommandMenu } from "commandmenu";
+
+const config = [
+  { id: "docs", label: "Documentation", onSelect: openDocs },
+  { id: "search", label: "Search", shortcut: "F", onSelect: openSearch },
+] as const satisfies readonly Config[];
+
+export const CommandMenu = () => {
+  const { menuProps, searchProps, listProps, list, selectedId } =
+    useCommandMenu({ config });
+
+  return (
+    <div {...menuProps}>
+      <input {...searchProps} placeholder="Search…" />
+      <ul {...listProps}>
+        {list.map((item) => (
+          <li
+            key={item.id}
+            {...item.itemProps}
+            aria-selected={item.id === selectedId}
+          >
+            {item.label}
+          </li>
+        ))}
+      </ul>
+    </div>
+  );
+};`;
+
+const STEPS = [
+  { prop: "menuProps", target: "the wrapper, for the keyboard" },
+  { prop: "searchProps", target: "the input, as a combobox" },
+  { prop: "listProps", target: "the list, as its listbox" },
+  { prop: "itemProps", target: "each row, as an option" },
+];
+---
+
+<Band id="usage" class="grid gap-16 lg:grid-cols-[minmax(0,5fr)_minmax(0,7fr)] lg:gap-21">
+  <div class="flex flex-col gap-6">
+    <p class={eyebrow}>Usage</p>
+    <h2 class={h2}>One hook, <em>your markup.</em></h2>
+    <p class="max-w-md text-pretty text-primary-600 lg:mt-4">
+      Hand the hook your items. It gives back the filtered list and a few sets of props to spread
+      onto your own elements.
+    </p>
+
+    <ol class="mt-4 flex max-w-md flex-col">
+      {
+        STEPS.map(({ prop, target }) => (
+          <li class="flex items-baseline justify-between gap-6 border-primary-200 border-t py-3.5 text-sm">
+            <code class="font-mono text-[13px] text-primary-950">{prop}</code>
+            <span class="text-end text-primary-600">{target}</span>
+          </li>
+        ))
+      }
+    </ol>
+
+    <a
+      href={`${site.githubUrl}#readme`}
+      target="_blank"
+      rel="noreferrer"
+      class="group mt-4 inline-flex w-fit items-center gap-2 text-primary-900 underline decoration-primary-300 underline-offset-4 transition-colors hover:decoration-primary-600"
+    >
+      Read the full guide
+      <ArrowUpRightIcon
+        className="size-4 transition-transform duration-300 ease-sail group-hover:translate-x-0.5 group-hover:-translate-y-0.5"
+      />
+    </a>
+  </div>
+
+  <!-- The dark of the footer, brought up as a card: film grain and a slate
+       glow from the top edge. -->
+  <figure
+    class="grain relative isolate overflow-hidden rounded-3xl bg-primary-950 shadow-[0_30px_80px_-40px_rgb(41_41_41/0.6)]"
+  >
+    <div
+      aria-hidden="true"
+      class="pointer-events-none absolute inset-x-0 -top-40 -z-10 h-80 bg-[radial-gradient(ellipse_at_center,rgb(128_151_177/0.22),transparent_65%)]"
+    >
+    </div>
+
+    <figcaption
+      class="flex items-center justify-between border-white/8 border-b px-6 py-4 text-primary-400 text-xs lg:px-8"
+    >
+      <span class="font-mono">CommandMenu.tsx</span>
+      <span class="uppercase tracking-[0.2em]">TSX</span>
+    </figcaption>
+
+    <Code
+      code={SNIPPET}
+      lang="tsx"
+      theme={codeTheme}
+      class={cn("overflow-x-auto px-6 py-6 font-mono text-[13px] leading-6 lg:px-8 lg:py-8")}
+    />
+  </figure>
+</Band>
