@@ -1,5 +1,6 @@
-import { MotionConfig, motion } from "framer-motion";
+import { m } from "framer-motion";
 import { type FunctionComponent, useEffect, useState } from "react";
+import { MotionProvider } from "../utils/motion";
 import { site } from "../utils/site";
 import { cn, floatingPill } from "../utils/styles";
 import { ArrowUpRightIcon } from "./icons";
@@ -50,7 +51,7 @@ export const TopMenu: FunctionComponent = () => {
 
   const highlight = (id: string) =>
     hovered === id && (
-      <motion.span
+      <m.span
         layoutId="nav-highlight"
         className="bg-primary-950/6 absolute inset-0 rounded-full"
         transition={{ type: "spring", bounce: 0.18, duration: 0.45 }}
@@ -58,7 +59,7 @@ export const TopMenu: FunctionComponent = () => {
     );
 
   return (
-    <MotionConfig reducedMotion="user">
+    <MotionProvider>
       <header className="fixed inset-x-0 top-0 z-50 flex justify-center px-4 py-4">
         <nav
           aria-label="Sections"
@@ -105,6 +106,6 @@ export const TopMenu: FunctionComponent = () => {
           </a>
         </nav>
       </header>
-    </MotionConfig>
+    </MotionProvider>
   );
 };

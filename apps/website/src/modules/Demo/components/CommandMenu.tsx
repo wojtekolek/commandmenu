@@ -1,6 +1,6 @@
 import type { PreparedItem } from "commandmenu";
 import { isGroupList, useCommandMenu } from "commandmenu";
-import { motion } from "framer-motion";
+import { m } from "framer-motion";
 import {
   type FunctionComponent,
   type KeyboardEvent,
@@ -49,7 +49,7 @@ const Item = memo(({ item, isSelected }: ItemProps) => {
       )}
     >
       {isSelected && (
-        <motion.span
+        <m.span
           layoutId="command-highlight"
           aria-hidden="true"
           className="bg-primary-950/5 absolute inset-0 rounded-xl shadow-[inset_0_0_0_1px_rgb(41_41_41/0.04)]"
@@ -207,7 +207,7 @@ export const CommandMenu: FunctionComponent = () => {
         />
       </div>
 
-      <motion.ul
+      <m.ul
         {...listProps}
         layoutScroll
         className="m-0 min-h-0 flex-1 scroll-p-2 list-none overflow-y-auto overscroll-contain p-2"
@@ -231,7 +231,7 @@ export const CommandMenu: FunctionComponent = () => {
               </li>
             ))
           : list.map(renderItem)}
-      </motion.ul>
+      </m.ul>
 
       <HintBar isNested={isNested} />
     </div>

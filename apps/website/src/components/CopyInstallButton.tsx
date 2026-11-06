@@ -1,5 +1,6 @@
-import { AnimatePresence, MotionConfig, motion } from "framer-motion";
+import { AnimatePresence, m } from "framer-motion";
 import { type FunctionComponent, useEffect, useRef, useState } from "react";
+import { MotionProvider } from "../utils/motion";
 import { ease } from "../utils/styles";
 import { CheckIcon, CopyIcon } from "./icons";
 
@@ -45,7 +46,7 @@ export const CopyInstallButton: FunctionComponent<CopyInstallButtonProps> = ({ p
   );
 
   return (
-    <MotionConfig reducedMotion="user">
+    <MotionProvider>
       <button
         type="button"
         onClick={handleCopy}
@@ -58,7 +59,7 @@ export const CopyInstallButton: FunctionComponent<CopyInstallButtonProps> = ({ p
         </span>
 
         <AnimatePresence mode="wait" initial={false}>
-          <motion.span
+          <m.span
             key={copied ? "copied" : "idle"}
             {...swap}
             className="col-start-1 row-start-1 flex items-center justify-center gap-2.5"
@@ -71,13 +72,13 @@ export const CopyInstallButton: FunctionComponent<CopyInstallButtonProps> = ({ p
             ) : (
               content
             )}
-          </motion.span>
+          </m.span>
         </AnimatePresence>
 
         <span role="status" className="sr-only">
           {copied ? "Install command copied" : ""}
         </span>
       </button>
-    </MotionConfig>
+    </MotionProvider>
   );
 };

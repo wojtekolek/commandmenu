@@ -1,5 +1,5 @@
-import { MotionConfig } from "framer-motion";
 import type { FunctionComponent } from "react";
+import { MotionProvider } from "../../utils/motion";
 import { CommandMenu } from "./components/CommandMenu";
 import { Toaster } from "./components/Toaster";
 
@@ -8,7 +8,7 @@ import { Toaster } from "./components/Toaster";
 // long soft drop. Providers live here, above the menu, so its renders don't
 // re-run them.
 export const Demo: FunctionComponent = () => (
-  <MotionConfig reducedMotion="user">
+  <MotionProvider>
     <section
       aria-label="Live demo"
       className="border-primary-950/6 bg-primary-0/60 rounded-[28px] border p-2 shadow-[0_40px_90px_-45px_rgb(41_41_41/0.5)] backdrop-blur-sm"
@@ -16,5 +16,5 @@ export const Demo: FunctionComponent = () => (
       <CommandMenu />
     </section>
     <Toaster />
-  </MotionConfig>
+  </MotionProvider>
 );
