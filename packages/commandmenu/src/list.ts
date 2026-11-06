@@ -10,40 +10,42 @@ type Span = { id: string; label: string; start: number; end: number };
 
 /**
  * Everything the menu can show, in display order, each id once (the first occurrence wins).
- * With `groups`, that's the items the groups list, in group order.
+ * With `groups`, that's the items the groups list, in group order. `ids` holds every entry's id.
  */
 export const buildEntries = <T extends Config>(
   config: readonly T[],
   groups: readonly GroupOf<string>[] | undefined,
-): Entry<T>[] => {
+): { entries: Entry<T>[]; ids: ReadonlySet<string> } => {
   const entries: Entry<T>[] = [];
-  const seen = new Set<string>();
+  const ids = new Set<string>();
   const add = (item: T | undefined, group?: GroupOf<string>) => {
-    if (!item || seen.has(item.id)) return;
-    seen.add(item.id);
+    if (!item || ids.has(item.id)) return;
+    ids.add(item.id);
     entries.push({ item, text: item.label.toLowerCase(), group });
   };
 
-  if (!groups) {
+  if (groups) {
+    const byId = new Map<string, T>();
+    for (const item of config) if (!byId.has(item.id)) byId.set(item.id, item);
+    for (const group of groups) for (const id of group.items) add(byId.get(id), group);
+  } else {
     for (const item of config) add(item);
-    return entries;
   }
-
-  const byId = new Map<string, T>();
-  for (const item of config) if (!byId.has(item.id)) byId.set(item.id, item);
-  for (const group of groups) for (const id of group.items) add(byId.get(id), group);
-  return entries;
+  return { entries, ids };
 };
 
-/** Async results minus any id that's already on the menu or repeats among them. */
+/**
+ * Async results minus any id in `known` (already on the menu) or repeated among them. Costs
+ * O(results), not O(menu): `known` comes prebuilt from `buildEntries`.
+ */
 export const dropKnownIds = <A extends Config>(
   results: readonly A[],
-  entries: readonly Entry<Config>[],
+  known: ReadonlySet<string>,
 ): readonly A[] => {
   if (!results.length) return EMPTY;
-  const seen = new Set(entries.map((e) => e.item.id));
+  const seen = new Set<string>();
   return results.filter((item) => {
-    if (seen.has(item.id)) return false;
+    if (known.has(item.id) || seen.has(item.id)) return false;
     seen.add(item.id);
     return true;
   });

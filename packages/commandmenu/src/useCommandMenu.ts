@@ -135,14 +135,14 @@ export function useCommandMenu<T extends Config, A extends Config = T>({
   // What's on the menu. `entries` and `shortcuts` depend only on `config` and `groups`, so
   // typing never rebuilds them.
 
-  const entries = useMemo(() => buildEntries(config, groups), [config, groups]);
+  const { entries, ids } = useMemo(() => buildEntries(config, groups), [config, groups]);
   const shortcuts = useMemo(() => buildShortcuts(entries.map((e) => e.item)), [entries]);
 
   const results = asyncResultsGroup?.items;
   const resultsId = asyncResultsGroup?.id;
   const resultsLabel = asyncResultsGroup?.label;
   // Returns the shared `EMPTY` for no results, so `items: data ?? []` doesn't rebuild the list.
-  const asyncItems = useMemo(() => dropKnownIds(results ?? EMPTY, entries), [results, entries]);
+  const asyncItems = useMemo(() => dropKnownIds(results ?? EMPTY, ids), [results, ids]);
 
   const { flat, spans } = useMemo(
     () =>
