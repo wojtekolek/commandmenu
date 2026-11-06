@@ -14,11 +14,7 @@
       "!**/node_modules",
       "!**/.turbo",
       "!**/build",
-      "!**/.next",
-      "!**/.astro",
-      "!**/analyze",
-      "!**/routeTree.gen.ts",
-      "!nexum-design-system-v4.html"
+      "!**/.astro"
     ]
   },
   "formatter": {
@@ -39,9 +35,6 @@
   },
   "linter": {
     "enabled": true,
-    "domains": {
-      "drizzle": "all"
-    },
     "rules": {
       "preset": "recommended",
       "a11y": {
