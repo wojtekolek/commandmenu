@@ -9,6 +9,8 @@ type Props = {
 };
 const { title, description } = Astro.props;
 const canonicalUrl = Astro.url.href;
+// Scrapers want absolute image URLs.
+const ogImage = new URL("/og.png", Astro.site ?? Astro.url).href;
 const siteName = "Command Menu";
 ---
 
@@ -40,14 +42,14 @@ const siteName = "Command Menu";
 		<meta property="og:url" content={canonicalUrl} />
 		<meta property="og:title" content={title} />
 		<meta property="og:description" content={description} />
-		<meta property="og:image" content="/og.png" />
+		<meta property="og:image" content={ogImage} />
 		<meta property="og:site_name" content={siteName} />
 
 		<!-- Twitter -->
 		<meta name="twitter:card" content="summary_large_image" />
 		<meta name="twitter:title" content={title} />
 		<meta name="twitter:description" content={description} />
-		<meta name="twitter:image" content="/og.png" />
+		<meta name="twitter:image" content={ogImage} />
 	</head>
 	<body id="top" class="flex min-h-svh flex-col overflow-x-clip 2xl:mx-auto 2xl:max-w-[1440px]">
 		<TopMenu client:load />
