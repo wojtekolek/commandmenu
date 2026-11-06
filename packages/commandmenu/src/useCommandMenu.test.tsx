@@ -872,6 +872,18 @@ describe("useCommandMenu", () => {
   });
 
   describe("duplicate ids", () => {
+    it("gives an id with a lone surrogate a distinct option id instead of throwing", () => {
+      const config = [
+        createConfig({ id: "a\uD83D", label: "Cut through an emoji" }),
+        createConfig({ id: "a%uD83D", label: "Look-alike" }),
+      ];
+      const { result } = renderHook(() => useCommandMenu({ config }));
+      const [cut, lookAlike] = result.current.list;
+
+      expect(cut.itemProps.id).toMatch(/-option-a%uD83D$/);
+      expect(lookAlike.itemProps.id).toMatch(/-option-a%25uD83D$/);
+    });
+
     it("shows an item listed in two groups only in the first", () => {
       const groups: Group<DefaultConfig>[] = [
         { id: "g1", label: "G1", items: ["copy", "paste"] },

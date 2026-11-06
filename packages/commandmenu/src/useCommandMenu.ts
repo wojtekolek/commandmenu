@@ -38,7 +38,24 @@ export const isGroupList = <T extends Config>(
   list: readonly (PreparedGroup<T> | PreparedItem<T>)[],
 ): list is PreparedGroup<T>[] => list.length > 0 && !("itemProps" in list[0]);
 
-const optionId = (baseId: string, id: string) => `${baseId}-option-${encodeURIComponent(id)}`;
+/**
+ * `encodeURIComponent` keeps ids free of whitespace and unique, but throws on a lone surrogate
+ * (say, an id cut through an emoji). Those few are spelled `%uXXXX`, which its own output never
+ * contains, so ids stay unique and every other id encodes as it always has.
+ */
+const encodeId = (id: string) => {
+  try {
+    return encodeURIComponent(id);
+  } catch {
+    return Array.from(id, (char) =>
+      char.length === 1 && char >= "\uD800" && char <= "\uDFFF"
+        ? `%u${char.charCodeAt(0).toString(16).toUpperCase()}`
+        : encodeURIComponent(char),
+    ).join("");
+  }
+};
+
+const optionId = (baseId: string, id: string) => `${baseId}-option-${encodeId(id)}`;
 
 /** Shared by every item: pressing one must not move focus out of the search input. */
 const keepFocus = (e: MouseEvent) => e.preventDefault();
