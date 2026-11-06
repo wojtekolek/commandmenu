@@ -86,7 +86,6 @@ type Latest<T extends Config, A extends Config> = Pick<
   "onKeyDown" | "onKeyUp" | "onSearchChange"
 > & {
   flat: readonly (T | A)[];
-  selectedItem: T | A | undefined;
   query: string;
   shortcuts: Map<string, T>;
 };
@@ -166,7 +165,6 @@ export function useCommandMenu<T extends Config, A extends Config = T>({
   useLayoutEffect(() => {
     Object.assign(latest, {
       flat,
-      selectedItem,
       query,
       shortcuts,
       onKeyDown,
@@ -186,7 +184,13 @@ export function useCommandMenu<T extends Config, A extends Config = T>({
     setSelectionState(next);
   }, []);
 
-  // Handlers. All stable: they read current values from `latest`.
+  // Handlers. All stable: they read current values from `latest`, and the highlighted item from
+  // `selectionRef`, so a move and an Enter in the same batch act on the moved-to item.
+
+  const current = useCallback(
+    (): Item | undefined => latest.flat[locate(latest.flat, selectionRef.current)],
+    [latest],
+  );
 
   const select = useCallback(
     (item: Config | undefined) => {
@@ -204,10 +208,10 @@ export function useCommandMenu<T extends Config, A extends Config = T>({
   const hover = useCallback(
     (item: Item) => {
       // Pointer moves fire constantly; staying on the same item must not even schedule work.
-      if (latest.selectedItem === item) return;
+      if (current() === item) return;
       setSelection({ id: item.id, idx: latest.flat.indexOf(item), reveal: false });
     },
-    [latest, setSelection],
+    [latest, current, setSelection],
   );
 
   const move = useCallback(
@@ -254,10 +258,10 @@ export function useCommandMenu<T extends Config, A extends Config = T>({
         move(-1);
       } else if (e.key === "Enter") {
         e.preventDefault();
-        if (!e.repeat) select(latest.selectedItem);
+        if (!e.repeat) select(current());
       }
     },
-    [latest, listId, select, move],
+    [latest, listId, select, move, current],
   );
 
   const handleKeyUp = useCallback<KeyboardEventHandler<HTMLElement>>(

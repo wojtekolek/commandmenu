@@ -351,6 +351,18 @@ describe("useCommandMenu", () => {
   });
 
   describe("keyboard navigation", () => {
+    it("selects the moved-to item when a move and Enter land in one batch", () => {
+      const { result } = renderHook(() => useCommandMenu({ config: defaultConfig }));
+
+      act(() => {
+        result.current.menuProps.onKeyDown(keyEvent("ArrowDown"));
+        result.current.menuProps.onKeyDown(keyEvent("Enter"));
+      });
+
+      expect(defaultConfig[0].onSelect).not.toHaveBeenCalled();
+      expect(defaultConfig[1].onSelect).toHaveBeenCalledTimes(1);
+    });
+
     it("moves selection with ArrowDown / ArrowUp", () => {
       const { result } = renderHook(() => useCommandMenu({ config: defaultConfig }));
 
