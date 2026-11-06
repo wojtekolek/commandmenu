@@ -661,6 +661,25 @@ describe("useCommandMenu", () => {
       expect(config[0].onSelect).toHaveBeenCalledTimes(2);
     });
 
+    it("leaves a typed Latin letter to the browser rather than matching its physical key", () => {
+      const config = [
+        createConfig({ id: "q", label: "Q", shortcut: "Q" }),
+        createConfig({ id: "y", label: "Y", shortcut: "Y" }),
+      ];
+      const { result } = renderHook(() => useCommandMenu({ config }));
+
+      // AZERTY's select-all sits where QWERTY has Q, QWERTZ's undo where it has Y.
+      const selectAll = keyEvent("a", { ctrlKey: true, code: "KeyQ" });
+      const undo = keyEvent("z", { ctrlKey: true, code: "KeyY" });
+      act(() => result.current.menuProps.onKeyDown(selectAll));
+      act(() => result.current.menuProps.onKeyDown(undo));
+
+      expect(config[0].onSelect).not.toHaveBeenCalled();
+      expect(config[1].onSelect).not.toHaveBeenCalled();
+      expect(selectAll.preventDefault).not.toHaveBeenCalled();
+      expect(undo.preventDefault).not.toHaveBeenCalled();
+    });
+
     it("matches shortcuts case-insensitively", () => {
       const config = [createConfig({ id: "s", label: "S", shortcut: "⇧ s" })];
       const { result } = renderHook(() => useCommandMenu({ config }));
