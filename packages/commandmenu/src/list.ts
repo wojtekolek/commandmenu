@@ -92,7 +92,8 @@ export const layoutList = <T, A>({
       end: flat.length + results.length,
     });
   }
-  flat.push(...results);
+  // A loop, not `push(...results)`: spreading a very large array overflows the call stack.
+  for (const item of results) flat.push(item);
 
   return { flat, spans: grouped ? spans : null };
 };
