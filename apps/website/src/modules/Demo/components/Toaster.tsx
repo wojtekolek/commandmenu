@@ -44,9 +44,9 @@ export const Toaster: FunctionComponent = () => {
       {toast && (
         <div
           key={toast.id}
-          className="flex animate-toast-in items-center gap-2 rounded-full bg-primary-950 py-2.5 pr-5 pl-4 text-primary-50 text-sm shadow-[0_16px_40px_-14px_rgb(0_0_0/0.45),inset_0_1px_0_rgb(255_255_255/0.08)]"
+          className="animate-toast-in bg-primary-950 text-primary-50 flex items-center gap-2 rounded-full py-2.5 pr-5 pl-4 text-sm shadow-[0_16px_40px_-14px_rgb(0_0_0/0.45),inset_0_1px_0_rgb(255_255_255/0.08)]"
         >
-          <CheckIcon className="size-4 text-secondary-300" />
+          <CheckIcon className="text-secondary-300 size-4" />
           {toast.message}
         </div>
       )}

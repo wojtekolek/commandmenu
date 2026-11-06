@@ -11,16 +11,16 @@
     "astro": "astro"
   },
   "dependencies": {
-    "@astrojs/check": "0.9.8",
-    "@astrojs/react": "5.0.3",
-    "@tailwindcss/vite": "4.2.4",
-    "astro": "6.1.8",
+    "@astrojs/check": "0.9.12",
+    "@astrojs/react": "7.1.2",
+    "@tailwindcss/vite": "4.3.4",
+    "astro": "7.4.5",
     "commandmenu": "workspace:*",
-    "framer-motion": "12.38.0",
+    "framer-motion": "14.9.1",
     "react": "catalog:",
     "react-dom": "catalog:",
-    "tailwind-merge": "3.5.0",
-    "tailwindcss": "4.2.4"
+    "tailwind-merge": "3.7.0",
+    "tailwindcss": "4.3.4"
   },
   "devDependencies": {
     "@types/react": "catalog:",

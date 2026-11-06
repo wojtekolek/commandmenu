@@ -65,6 +65,67 @@ const changeEvent = (value: string) =>
 
 const ids = (list: readonly PreparedItem[]) => list.map((i) => i.id);
 
+type CountedProps = { config: Config[]; groups?: Group[]; async?: Config[] };
+
+// A consumer with memoized rows, counting how often the menu and its rows render.
+const counts = { menu: 0, rows: 0 };
+const CountedRow = memo(({ item, isSelected }: { item: PreparedItem; isSelected: boolean }) => {
+  counts.rows++;
+  return (
+    // biome-ignore lint/a11y/useAriaPropsSupportedByRole: `role="option"` comes from itemProps
+    <li {...item.itemProps} aria-selected={isSelected}>
+      {item.label}
+    </li>
+  );
+});
+const CountedMenu = ({ config, groups, async }: CountedProps) => {
+  counts.menu++;
+  const { list, listProps, menuProps, searchProps, selectedId } = useCommandMenu({
+    config,
+    groups,
+    asyncResultsGroup: async && { id: "r", label: "R", items: async },
+    onSearchChange: vi.fn(),
+  });
+  const row = (item: PreparedItem) => (
+    <CountedRow key={item.id} item={item} isSelected={item.id === selectedId} />
+  );
+  return (
+    <div {...menuProps}>
+      <input {...searchProps} />
+      <ul {...listProps}>
+        {isGroupList(list)
+          ? list.map((g) => (
+              <li key={g.id} role="presentation">
+                {/* biome-ignore lint/a11y/useSemanticElements: a <fieldset> can't sit inside a listbox */}
+                <ul role="group" aria-label={g.label}>
+                  {g.items.map(row)}
+                </ul>
+              </li>
+            ))
+          : list.map(row)}
+      </ul>
+    </div>
+  );
+};
+
+const DomMenu = ({ config, extra }: { config: Config[]; extra?: React.ReactNode }) => {
+  const { list, listProps, menuProps, searchProps, selectedId } = useCommandMenu({ config });
+  return (
+    <div {...menuProps}>
+      <input {...searchProps} />
+      {extra}
+      <ul {...listProps}>
+        {list.map((item) => (
+          // biome-ignore lint/a11y/useAriaPropsSupportedByRole: `role="option"` comes from itemProps
+          <li key={item.id} {...item.itemProps} aria-selected={item.id === selectedId}>
+            {item.label}
+          </li>
+        ))}
+      </ul>
+    </div>
+  );
+};
+
 describe("isGroupList", () => {
   it("returns true for PreparedGroup[]", () => {
     expect(isGroupList([{ id: "g", label: "G", items: [] }])).toBe(true);
@@ -815,53 +876,15 @@ describe("useCommandMenu", () => {
         createConfig({ id: `i${i}`, label: `${i % 2 ? "odd" : "even"} item ${i}` }),
       );
 
-    // A consumer with memoized rows, counting how often the menu and its rows render.
-    const renderCounted = (props: { config: Config[]; groups?: Group[]; async?: Config[] }) => {
-      const counts = { menu: 0, rows: 0 };
-      const Row = memo(({ item, isSelected }: { item: PreparedItem; isSelected: boolean }) => {
-        counts.rows++;
-        return (
-          // biome-ignore lint/a11y/useAriaPropsSupportedByRole: `role="option"` comes from itemProps
-          <li {...item.itemProps} aria-selected={isSelected}>
-            {item.label}
-          </li>
-        );
-      });
-      const Menu = ({ config, groups, async }: typeof props) => {
-        counts.menu++;
-        const { list, listProps, menuProps, searchProps, selectedId } = useCommandMenu({
-          config,
-          groups,
-          asyncResultsGroup: async && { id: "r", label: "R", items: async },
-          onSearchChange: vi.fn(),
-        });
-        const row = (item: PreparedItem) => (
-          <Row key={item.id} item={item} isSelected={item.id === selectedId} />
-        );
-        return (
-          <div {...menuProps}>
-            <input {...searchProps} />
-            <ul {...listProps}>
-              {isGroupList(list)
-                ? list.map((g) => (
-                    <li key={g.id} role="presentation">
-                      {/* biome-ignore lint/a11y/useSemanticElements: a <fieldset> can't sit inside a listbox */}
-                      <ul role="group" aria-label={g.label}>
-                        {g.items.map(row)}
-                      </ul>
-                    </li>
-                  ))
-                : list.map(row)}
-            </ul>
-          </div>
-        );
-      };
-      const ui = render(<Menu {...props} />);
+    const renderCounted = (props: CountedProps) => {
+      counts.menu = 0;
+      counts.rows = 0;
+      const ui = render(<CountedMenu {...props} />);
       const reset = () => {
         counts.menu = 0;
         counts.rows = 0;
       };
-      return { counts, reset, ui, Menu, input: screen.getByRole("combobox") };
+      return { counts, reset, ui, Menu: CountedMenu, input: screen.getByRole("combobox") };
     };
 
     it("re-renders only the two rows whose highlight changes on arrow keys", () => {
@@ -1066,24 +1089,6 @@ describe("useCommandMenu", () => {
   });
 
   describe("DOM integration", () => {
-    const Menu = ({ config, extra }: { config: Config[]; extra?: React.ReactNode }) => {
-      const { list, listProps, menuProps, searchProps, selectedId } = useCommandMenu({ config });
-      return (
-        <div {...menuProps}>
-          <input {...searchProps} />
-          {extra}
-          <ul {...listProps}>
-            {list.map((item) => (
-              // biome-ignore lint/a11y/useAriaPropsSupportedByRole: `role="option"` comes from itemProps
-              <li key={item.id} {...item.itemProps} aria-selected={item.id === selectedId}>
-                {item.label}
-              </li>
-            ))}
-          </ul>
-        </div>
-      );
-    };
-
     const ROW = 40;
     const VIEW = 100;
 
@@ -1116,7 +1121,7 @@ describe("useCommandMenu", () => {
       Array.from({ length: 8 }, (_, i) => createConfig({ id: `item ${i}`, label: `Item ${i}` }));
 
     it("wires combobox, listbox and option ARIA attributes", () => {
-      render(<Menu config={defaultConfig} />);
+      render(<DomMenu config={defaultConfig} />);
 
       const input = screen.getByRole("combobox");
       const listbox = screen.getByRole("listbox");
@@ -1131,7 +1136,7 @@ describe("useCommandMenu", () => {
 
     it("gives options DOM ids that are unique and free of whitespace", () => {
       render(
-        <Menu
+        <DomMenu
           config={[
             createConfig({ id: "list", label: "List" }),
             createConfig({ id: "with space", label: "Spaced" }),
@@ -1153,7 +1158,7 @@ describe("useCommandMenu", () => {
     });
 
     it("keeps focus in the input when an item is pressed", () => {
-      render(<Menu config={defaultConfig} />);
+      render(<DomMenu config={defaultConfig} />);
 
       const notPrevented = fireEvent.mouseDown(screen.getAllByRole("option")[1]);
 
@@ -1163,7 +1168,7 @@ describe("useCommandMenu", () => {
     it("leaves keys pressed in other controls inside the menu alone", () => {
       const onClick = vi.fn();
       render(
-        <Menu
+        <DomMenu
           config={defaultConfig}
           extra={
             <button type="button" onClick={onClick}>
@@ -1188,7 +1193,7 @@ describe("useCommandMenu", () => {
       const original = Element.prototype.scrollIntoView;
       Element.prototype.scrollIntoView = scrollIntoView;
       try {
-        render(<Menu config={manyItems()} />);
+        render(<DomMenu config={manyItems()} />);
         const input = screen.getByRole("combobox");
         const scrollTop = mockLayout(screen.getByRole("listbox"));
 
@@ -1211,7 +1216,7 @@ describe("useCommandMenu", () => {
     });
 
     it("does not scroll on mount", () => {
-      render(<Menu config={manyItems()} />);
+      render(<DomMenu config={manyItems()} />);
       const scrollTop = mockLayout(screen.getByRole("listbox"));
 
       expect(scrollTop()).toBe(0);
@@ -1230,7 +1235,7 @@ describe("useCommandMenu", () => {
             ({ overflowY: (element as HTMLElement).style.overflowY }) as CSSStyleDeclaration,
         );
       try {
-        const { getByRole } = render(<Menu config={manyItems()} />, { container });
+        const { getByRole } = render(<DomMenu config={manyItems()} />, { container });
         const scrollTop = mockLayout(getByRole("listbox"));
 
         for (let i = 0; i < 3; i++) fireEvent.keyDown(getByRole("combobox"), { key: "ArrowDown" });

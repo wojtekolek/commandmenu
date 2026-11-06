@@ -30,14 +30,20 @@
     "lineWidth": 100,
     "attributePosition": "auto"
   },
-  "assist": { "actions": { "source": { "organizeImports": "on" } } },
+  "assist": {
+    "actions": {
+      "source": {
+        "organizeImports": "on"
+      }
+    }
+  },
   "linter": {
     "enabled": true,
     "domains": {
       "drizzle": "all"
     },
     "rules": {
-      "recommended": true,
+      "preset": "recommended",
       "a11y": {
         "noSvgWithoutTitle": "off",
         "useGenericFontNames": "off",
@@ -140,17 +146,13 @@
         "useGetterReturn": "error",
         "noWith": "error",
         "noArrayIndexKey": "off",
-        "noConsole": "error"
+        "noConsole": "error",
+        "noUndeclaredEnvVars": "error"
       },
       "nursery": {
-        "noUndeclaredEnvVars": "error",
-        "useSortedClasses": {
+        "useTailwindSortedClasses": {
           "fix": "safe",
-          "level": "warn",
-          "options": {
-            "attributes": ["classList"],
-            "functions": ["clsx", "cva", "tw", "cn"]
-          }
+          "level": "warn"
         }
       }
     }
@@ -190,7 +192,7 @@
             "noUnusedVariables": "off",
             "noUnusedImports": "off"
           },
-          "nursery": {
+          "suspicious": {
             "noUndeclaredEnvVars": "off"
           }
         }
@@ -206,5 +208,15 @@
         }
       }
     }
-  ]
+  ],
+  "tailwind": {
+    "attributes": ["class", "className", "classList"],
+    "mergeFunctions": ["clsx", "tw", "cn"],
+    "variantFunctions": ["cva"]
+  },
+  "markdown": {
+    "formatter": {
+      "enabled": false
+    }
+  }
 }

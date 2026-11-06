@@ -22,7 +22,7 @@ import {
 import { showToast } from "./Toaster";
 
 const Kbd: FunctionComponent<{ children: ReactNode }> = ({ children }) => (
-  <kbd className="inline-flex h-5 min-w-5 items-center justify-center rounded-md border border-primary-200 bg-primary-50 px-1 font-default text-[10px] text-primary-600 shadow-[0_1px_0_rgb(41_41_41/0.06)]">
+  <kbd className="border-primary-200 bg-primary-50 font-default text-primary-600 inline-flex h-5 min-w-5 items-center justify-center rounded-md border px-1 text-[10px] shadow-[0_1px_0_rgb(41_41_41/0.06)]">
     {children}
   </kbd>
 );
@@ -52,7 +52,7 @@ const Item = memo(({ item, isSelected }: ItemProps) => {
         <motion.span
           layoutId="command-highlight"
           aria-hidden="true"
-          className="absolute inset-0 rounded-xl bg-primary-950/5 shadow-[inset_0_0_0_1px_rgb(41_41_41/0.04)]"
+          className="bg-primary-950/5 absolute inset-0 rounded-xl shadow-[inset_0_0_0_1px_rgb(41_41_41/0.04)]"
           transition={{ type: "spring", bounce: 0.15, duration: 0.35 }}
         />
       )}
@@ -65,7 +65,7 @@ const Item = memo(({ item, isSelected }: ItemProps) => {
           )}
         />
         <span className="truncate">{label}</span>
-        <span className="hidden truncate text-primary-600 text-xs sm:inline">{description}</span>
+        <span className="text-primary-600 hidden truncate text-xs sm:inline">{description}</span>
       </div>
 
       <div className="relative flex shrink-0 items-center gap-1">
@@ -77,7 +77,7 @@ const Item = memo(({ item, isSelected }: ItemProps) => {
             ))}
           </>
         )}
-        {SUBMENU_IDS.has(id) && <ChevronRightIcon className="ml-1 size-3.5 text-primary-400" />}
+        {SUBMENU_IDS.has(id) && <ChevronRightIcon className="text-primary-400 ml-1 size-3.5" />}
       </div>
     </li>
   );
@@ -87,15 +87,15 @@ const leaf = (label: string) => () => showToast(label);
 
 // Static pieces, hoisted: React skips an element it has already rendered, so these never
 // re-render with the menu.
-const searchIcon = <SearchIcon className="size-4 shrink-0 text-primary-400" />;
+const searchIcon = <SearchIcon className="text-primary-400 size-4 shrink-0" />;
 
 const emptyState = (
   <li
     role="presentation"
-    className="flex h-full flex-col items-center justify-center gap-1 text-primary-600"
+    className="text-primary-600 flex h-full flex-col items-center justify-center gap-1"
   >
-    <SearchIcon className="mb-2 size-7 text-primary-300" strokeWidth={1.5} />
-    <span className="font-medium text-primary-700 text-sm">No results</span>
+    <SearchIcon className="text-primary-300 mb-2 size-7" strokeWidth={1.5} />
+    <span className="text-primary-700 text-sm font-medium">No results</span>
     <span className="text-xs">Try a different search term</span>
   </li>
 );
@@ -104,7 +104,7 @@ const Breadcrumbs = memo(({ stack }: { stack: MenuLevel[] }) =>
   stack.map(({ label }) => (
     <span
       key={label}
-      className="flex shrink-0 items-center gap-1 rounded-full bg-primary-950/5 py-1 pr-1.5 pl-2.5 font-medium text-[11px] text-primary-600"
+      className="bg-primary-950/5 text-primary-600 flex shrink-0 items-center gap-1 rounded-full py-1 pr-1.5 pl-2.5 text-[11px] font-medium"
     >
       {label}
       <ChevronRightIcon className="size-3" />
@@ -116,7 +116,7 @@ const Breadcrumbs = memo(({ stack }: { stack: MenuLevel[] }) =>
 const HintBar = memo(({ isNested }: { isNested: boolean }) => (
   <div
     aria-hidden="true"
-    className="hidden items-center justify-between gap-4 border-primary-100 border-t bg-primary-50/60 px-4 py-2.5 text-[11px] text-primary-600 sm:flex"
+    className="border-primary-100 bg-primary-50/60 text-primary-600 hidden items-center justify-between gap-4 border-t px-4 py-2.5 text-[11px] sm:flex"
   >
     <div className="flex items-center gap-4">
       <span className="flex items-center gap-1.5">
@@ -190,9 +190,9 @@ export const CommandMenu: FunctionComponent = () => {
   return (
     <div
       {...menuProps}
-      className="flex h-[26rem] w-full flex-col overflow-hidden rounded-[20px] border border-primary-200 bg-primary-0 shadow-[0_1px_2px_rgb(41_41_41/0.06)]"
+      className="border-primary-200 bg-primary-0 flex h-[26rem] w-full flex-col overflow-hidden rounded-[20px] border shadow-[0_1px_2px_rgb(41_41_41/0.06)]"
     >
-      <div className="flex items-center gap-3 border-primary-100 border-b px-5 py-4">
+      <div className="border-primary-100 flex items-center gap-3 border-b px-5 py-4">
         {searchIcon}
         <Breadcrumbs stack={menuStack} />
 
@@ -203,7 +203,7 @@ export const CommandMenu: FunctionComponent = () => {
           placeholder={
             isNested ? `Search ${currentLevel.label.toLowerCase()}…` : "Type a command or search…"
           }
-          className="w-full min-w-0 bg-transparent text-[15px] text-primary-950 outline-none placeholder:text-primary-400"
+          className="text-primary-950 placeholder:text-primary-400 w-full min-w-0 bg-transparent text-[15px] outline-none"
         />
       </div>
 
@@ -220,7 +220,7 @@ export const CommandMenu: FunctionComponent = () => {
               <li key={id} role="presentation">
                 <div
                   aria-hidden="true"
-                  className="px-3 pt-3 pb-1.5 text-[11px] text-primary-600 uppercase tracking-[0.2em]"
+                  className="text-primary-600 px-3 pt-3 pb-1.5 text-[11px] tracking-[0.2em] uppercase"
                 >
                   {label}
                 </div>
