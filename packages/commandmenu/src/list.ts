@@ -6,7 +6,7 @@ export const EMPTY: readonly never[] = [];
 type Entry<T> = { item: T; text: string; group: GroupOf<string> | undefined };
 
 /** A group's slice of the flat list: `start` inclusive, `end` exclusive. */
-type Span = { id: string; label: string; start: number; end: number };
+export type Span = { id: string; label: string; start: number; end: number };
 
 /**
  * Everything the menu can show, in display order, each id once (the first occurrence wins).

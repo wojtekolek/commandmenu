@@ -1,5 +1,5 @@
 import { act, cleanup, fireEvent, render, renderHook, screen } from "@testing-library/react";
-import { memo } from "react";
+import { memo, StrictMode } from "react";
 import { afterEach, beforeEach, describe, expect, expectTypeOf, it, vi } from "vitest";
 import type { AsyncResultsGroup, Config, Group, PreparedGroup, PreparedItem } from "./types";
 import { isGroupList, useCommandMenu } from "./useCommandMenu";
@@ -1162,6 +1162,25 @@ describe("useCommandMenu", () => {
 
     const manyItems = () =>
       Array.from({ length: 8 }, (_, i) => createConfig({ id: `item ${i}`, label: `Item ${i}` }));
+
+    it("works under StrictMode's double renders and effects", () => {
+      render(
+        <StrictMode>
+          <DomMenu config={defaultConfig} />
+        </StrictMode>,
+      );
+      const input = screen.getByRole("combobox");
+
+      fireEvent.keyDown(input, { key: "ArrowDown" });
+      expect(input.getAttribute("aria-activedescendant")).toBe(
+        screen.getByRole("option", { name: "Paste" }).id,
+      );
+
+      fireEvent.change(input, { target: { value: "cu" } });
+      fireEvent.keyDown(input, { key: "Enter" });
+      expect(defaultConfig[2].onSelect).toHaveBeenCalledTimes(1);
+      expect(input).toHaveProperty("value", "");
+    });
 
     it("wires combobox, listbox and option ARIA attributes", () => {
       render(<DomMenu config={defaultConfig} />);
