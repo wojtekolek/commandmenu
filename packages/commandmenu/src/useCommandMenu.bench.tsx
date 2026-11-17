@@ -1,6 +1,6 @@
 import { cleanup, fireEvent, render } from "@testing-library/react";
 import { memo } from "react";
-import { bench, describe } from "vitest";
+import { describe, test } from "vitest";
 import type { Config, PreparedItem } from "./types";
 import { useCommandMenu } from "./useCommandMenu";
 
@@ -58,40 +58,25 @@ describe.each([1000, 5000])("%i items", (n) => {
     ui = render(<Menu config={config} results={[]} />);
     input = ui.container.querySelector("input") as HTMLInputElement;
   };
-  const options = { setup: mount, teardown: cleanup };
+  const options = { beforeAll: mount, afterAll: cleanup };
 
-  bench(
-    "type a query letter by letter, then clear it",
-    () => {
-      for (const value of ["s", "se", "set", ""]) fireEvent.change(input, { target: { value } });
-    },
-    options,
-  );
-
-  bench(
-    "ArrowDown x10, ArrowUp x10",
-    () => {
-      for (let i = 0; i < 10; i++) fireEvent.keyDown(input, { key: "ArrowDown" });
-      for (let i = 0; i < 10; i++) fireEvent.keyDown(input, { key: "ArrowUp" });
-    },
-    options,
-  );
-
-  bench(
-    "hover across 10 rows",
-    () => {
-      const rows = ui.container.querySelectorAll('[role="option"]');
-      for (let i = 0; i < 10; i++) fireEvent.pointerMove(rows[i]);
-    },
-    options,
-  );
-
-  bench(
-    "async results arrive one by one",
-    () => {
-      for (let i = 1; i <= 5; i++) ui.rerender(<Menu config={config} results={results(i)} />);
-      ui.rerender(<Menu config={config} results={[]} />);
-    },
-    options,
-  );
+  test("interactions", async ({ bench }) => {
+    await bench.compare(
+      bench("type a query letter by letter, then clear it", options, () => {
+        for (const value of ["s", "se", "set", ""]) fireEvent.change(input, { target: { value } });
+      }),
+      bench("ArrowDown x10, ArrowUp x10", options, () => {
+        for (let i = 0; i < 10; i++) fireEvent.keyDown(input, { key: "ArrowDown" });
+        for (let i = 0; i < 10; i++) fireEvent.keyDown(input, { key: "ArrowUp" });
+      }),
+      bench("hover across 10 rows", options, () => {
+        const rows = ui.container.querySelectorAll('[role="option"]');
+        for (let i = 0; i < 10; i++) fireEvent.pointerMove(rows[i]);
+      }),
+      bench("async results arrive one by one", options, () => {
+        for (let i = 1; i <= 5; i++) ui.rerender(<Menu config={config} results={results(i)} />);
+        ui.rerender(<Menu config={config} results={[]} />);
+      }),
+    );
+  });
 });

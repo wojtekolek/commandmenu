@@ -1,5 +1,6 @@
-import { MotionConfig, motion } from "framer-motion";
+import { m } from "framer-motion";
 import { type FunctionComponent, useEffect, useState } from "react";
+import { MotionProvider } from "../utils/motion";
 import { site } from "../utils/site";
 import { cn, floatingPill } from "../utils/styles";
 import { ArrowUpRightIcon } from "./icons";
@@ -50,21 +51,21 @@ export const TopMenu: FunctionComponent = () => {
 
   const highlight = (id: string) =>
     hovered === id && (
-      <motion.span
+      <m.span
         layoutId="nav-highlight"
-        className="absolute inset-0 rounded-full bg-primary-950/6"
+        className="bg-primary-950/6 absolute inset-0 rounded-full"
         transition={{ type: "spring", bounce: 0.18, duration: 0.45 }}
       />
     );
 
   return (
-    <MotionConfig reducedMotion="user">
+    <MotionProvider>
       <header className="fixed inset-x-0 top-0 z-50 flex justify-center px-4 py-4">
         <nav
           aria-label="Sections"
           data-scrolled={isScrolled || undefined}
           onMouseLeave={() => setHovered(null)}
-          className={cn(floatingPill, "flex animate-fade-down items-center gap-0.5 p-1")}
+          className={cn(floatingPill, "animate-fade-down flex items-center gap-0.5 p-1")}
         >
           {NAV.map(({ label, href }) => (
             <a
@@ -78,7 +79,7 @@ export const TopMenu: FunctionComponent = () => {
             </a>
           ))}
 
-          <span className="mx-1 h-4 w-px bg-primary-950/10" aria-hidden="true" />
+          <span className="bg-primary-950/10 mx-1 h-4 w-px" aria-hidden="true" />
 
           <a
             href={site.githubUrl}
@@ -89,7 +90,7 @@ export const TopMenu: FunctionComponent = () => {
           >
             {highlight("github")}
             <span className="relative">GitHub</span>
-            <ArrowUpRightIcon className="relative size-3.5 opacity-50 transition-transform duration-300 ease-sail group-hover:translate-x-0.5 group-hover:-translate-y-0.5" />
+            <ArrowUpRightIcon className="ease-sail relative size-3.5 opacity-50 transition-transform duration-300 group-hover:translate-x-0.5 group-hover:-translate-y-0.5" />
           </a>
 
           <a
@@ -105,6 +106,6 @@ export const TopMenu: FunctionComponent = () => {
           </a>
         </nav>
       </header>
-    </MotionConfig>
+    </MotionProvider>
   );
 };

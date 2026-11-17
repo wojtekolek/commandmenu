@@ -36,6 +36,11 @@ export type GroupOf<Id extends string> = {
 /** Accepts either an item type or a config array type: `Group<Item>` or `Group<typeof config>`. */
 export type Group<T extends Config | readonly Config[] = Config> = GroupOf<ItemOf<T>["id"]>;
 
+/**
+ * Results fetched while the user types, listed after the matching `config` items. They're shown
+ * as they come (the hook doesn't filter them by the query), and their `shortcut`s don't fire:
+ * shortcuts come from `config` alone.
+ */
 export type AsyncResultsGroup<T extends Config = Config> = {
   id: string;
   label: string;

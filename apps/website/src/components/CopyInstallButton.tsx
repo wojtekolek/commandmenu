@@ -1,5 +1,6 @@
-import { AnimatePresence, MotionConfig, motion } from "framer-motion";
+import { AnimatePresence, m } from "framer-motion";
 import { type FunctionComponent, useEffect, useRef, useState } from "react";
+import { MotionProvider } from "../utils/motion";
 import { ease } from "../utils/styles";
 import { CheckIcon, CopyIcon } from "./icons";
 
@@ -40,17 +41,17 @@ export const CopyInstallButton: FunctionComponent<CopyInstallButtonProps> = ({ p
     <>
       <span className="text-primary-500">$</span>
       <span>{command}</span>
-      <CopyIcon className="size-4 text-primary-500 transition-colors duration-200 group-hover:text-primary-300" />
+      <CopyIcon className="text-primary-500 group-hover:text-primary-300 size-4 transition-colors duration-200" />
     </>
   );
 
   return (
-    <MotionConfig reducedMotion="user">
+    <MotionProvider>
       <button
         type="button"
         onClick={handleCopy}
         aria-label={`Copy "${command}"`}
-        className="group relative grid cursor-pointer overflow-hidden rounded-full bg-primary-950 px-5 py-2.5 font-mono text-[13px] text-primary-100 shadow-[0_12px_32px_-12px_rgb(41_41_41/0.55),inset_0_1px_0_rgb(255_255_255/0.08)] transition-[background-color,transform] duration-300 ease-sail hover:bg-primary-900 focus-visible:outline-2 focus-visible:outline-secondary-500 focus-visible:outline-offset-2 active:scale-95"
+        className="group bg-primary-950 text-primary-100 ease-sail hover:bg-primary-900 focus-visible:outline-secondary-500 relative grid cursor-pointer overflow-hidden rounded-full px-5 py-2.5 font-mono text-[13px] shadow-[0_12px_32px_-12px_rgb(41_41_41/0.55),inset_0_1px_0_rgb(255_255_255/0.08)] transition-[background-color,transform] duration-300 focus-visible:outline-2 focus-visible:outline-offset-2 active:scale-95"
       >
         {/* Holds the width steady while the two states swap. */}
         <span className="invisible col-start-1 row-start-1 flex items-center gap-2.5">
@@ -58,26 +59,26 @@ export const CopyInstallButton: FunctionComponent<CopyInstallButtonProps> = ({ p
         </span>
 
         <AnimatePresence mode="wait" initial={false}>
-          <motion.span
+          <m.span
             key={copied ? "copied" : "idle"}
             {...swap}
             className="col-start-1 row-start-1 flex items-center justify-center gap-2.5"
           >
             {copied ? (
               <>
-                <CheckIcon className="size-4 text-secondary-300" />
+                <CheckIcon className="text-secondary-300 size-4" />
                 <span>Copied, have fun!</span>
               </>
             ) : (
               content
             )}
-          </motion.span>
+          </m.span>
         </AnimatePresence>
 
         <span role="status" className="sr-only">
           {copied ? "Install command copied" : ""}
         </span>
       </button>
-    </MotionConfig>
+    </MotionProvider>
   );
 };

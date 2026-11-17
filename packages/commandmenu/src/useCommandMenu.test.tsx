@@ -1,5 +1,5 @@
 import { act, cleanup, fireEvent, render, renderHook, screen } from "@testing-library/react";
-import { memo } from "react";
+import { memo, StrictMode } from "react";
 import { afterEach, beforeEach, describe, expect, expectTypeOf, it, vi } from "vitest";
 import type { AsyncResultsGroup, Config, Group, PreparedGroup, PreparedItem } from "./types";
 import { isGroupList, useCommandMenu } from "./useCommandMenu";
@@ -64,6 +64,67 @@ const changeEvent = (value: string) =>
   ({ target: { value } }) as React.ChangeEvent<HTMLInputElement>;
 
 const ids = (list: readonly PreparedItem[]) => list.map((i) => i.id);
+
+type CountedProps = { config: Config[]; groups?: Group[]; async?: Config[] };
+
+// A consumer with memoized rows, counting how often the menu and its rows render.
+const counts = { menu: 0, rows: 0 };
+const CountedRow = memo(({ item, isSelected }: { item: PreparedItem; isSelected: boolean }) => {
+  counts.rows++;
+  return (
+    // biome-ignore lint/a11y/useAriaPropsSupportedByRole: `role="option"` comes from itemProps
+    <li {...item.itemProps} aria-selected={isSelected}>
+      {item.label}
+    </li>
+  );
+});
+const CountedMenu = ({ config, groups, async }: CountedProps) => {
+  counts.menu++;
+  const { list, listProps, menuProps, searchProps, selectedId } = useCommandMenu({
+    config,
+    groups,
+    asyncResultsGroup: async && { id: "r", label: "R", items: async },
+    onSearchChange: vi.fn(),
+  });
+  const row = (item: PreparedItem) => (
+    <CountedRow key={item.id} item={item} isSelected={item.id === selectedId} />
+  );
+  return (
+    <div {...menuProps}>
+      <input {...searchProps} />
+      <ul {...listProps}>
+        {isGroupList(list)
+          ? list.map((g) => (
+              <li key={g.id} role="presentation">
+                {/* biome-ignore lint/a11y/useSemanticElements: a <fieldset> can't sit inside a listbox */}
+                <ul role="group" aria-label={g.label}>
+                  {g.items.map(row)}
+                </ul>
+              </li>
+            ))
+          : list.map(row)}
+      </ul>
+    </div>
+  );
+};
+
+const DomMenu = ({ config, extra }: { config: Config[]; extra?: React.ReactNode }) => {
+  const { list, listProps, menuProps, searchProps, selectedId } = useCommandMenu({ config });
+  return (
+    <div {...menuProps}>
+      <input {...searchProps} />
+      {extra}
+      <ul {...listProps}>
+        {list.map((item) => (
+          // biome-ignore lint/a11y/useAriaPropsSupportedByRole: `role="option"` comes from itemProps
+          <li key={item.id} {...item.itemProps} aria-selected={item.id === selectedId}>
+            {item.label}
+          </li>
+        ))}
+      </ul>
+    </div>
+  );
+};
 
 describe("isGroupList", () => {
   it("returns true for PreparedGroup[]", () => {
@@ -290,6 +351,18 @@ describe("useCommandMenu", () => {
   });
 
   describe("keyboard navigation", () => {
+    it("selects the moved-to item when a move and Enter land in one batch", () => {
+      const { result } = renderHook(() => useCommandMenu({ config: defaultConfig }));
+
+      act(() => {
+        result.current.menuProps.onKeyDown(keyEvent("ArrowDown"));
+        result.current.menuProps.onKeyDown(keyEvent("Enter"));
+      });
+
+      expect(defaultConfig[0].onSelect).not.toHaveBeenCalled();
+      expect(defaultConfig[1].onSelect).toHaveBeenCalledTimes(1);
+    });
+
     it("moves selection with ArrowDown / ArrowUp", () => {
       const { result } = renderHook(() => useCommandMenu({ config: defaultConfig }));
 
@@ -600,6 +673,25 @@ describe("useCommandMenu", () => {
       expect(config[0].onSelect).toHaveBeenCalledTimes(2);
     });
 
+    it("leaves a typed Latin letter to the browser rather than matching its physical key", () => {
+      const config = [
+        createConfig({ id: "q", label: "Q", shortcut: "Q" }),
+        createConfig({ id: "y", label: "Y", shortcut: "Y" }),
+      ];
+      const { result } = renderHook(() => useCommandMenu({ config }));
+
+      // AZERTY's select-all sits where QWERTY has Q, QWERTZ's undo where it has Y.
+      const selectAll = keyEvent("a", { ctrlKey: true, code: "KeyQ" });
+      const undo = keyEvent("z", { ctrlKey: true, code: "KeyY" });
+      act(() => result.current.menuProps.onKeyDown(selectAll));
+      act(() => result.current.menuProps.onKeyDown(undo));
+
+      expect(config[0].onSelect).not.toHaveBeenCalled();
+      expect(config[1].onSelect).not.toHaveBeenCalled();
+      expect(selectAll.preventDefault).not.toHaveBeenCalled();
+      expect(undo.preventDefault).not.toHaveBeenCalled();
+    });
+
     it("matches shortcuts case-insensitively", () => {
       const config = [createConfig({ id: "s", label: "S", shortcut: "⇧ s" })];
       const { result } = renderHook(() => useCommandMenu({ config }));
@@ -792,6 +884,18 @@ describe("useCommandMenu", () => {
   });
 
   describe("duplicate ids", () => {
+    it("gives an id with a lone surrogate a distinct option id instead of throwing", () => {
+      const config = [
+        createConfig({ id: "a\uD83D", label: "Cut through an emoji" }),
+        createConfig({ id: "a%uD83D", label: "Look-alike" }),
+      ];
+      const { result } = renderHook(() => useCommandMenu({ config }));
+      const [cut, lookAlike] = result.current.list;
+
+      expect(cut.itemProps.id).toMatch(/-option-a%uD83D$/);
+      expect(lookAlike.itemProps.id).toMatch(/-option-a%25uD83D$/);
+    });
+
     it("shows an item listed in two groups only in the first", () => {
       const groups: Group<DefaultConfig>[] = [
         { id: "g1", label: "G1", items: ["copy", "paste"] },
@@ -815,53 +919,15 @@ describe("useCommandMenu", () => {
         createConfig({ id: `i${i}`, label: `${i % 2 ? "odd" : "even"} item ${i}` }),
       );
 
-    // A consumer with memoized rows, counting how often the menu and its rows render.
-    const renderCounted = (props: { config: Config[]; groups?: Group[]; async?: Config[] }) => {
-      const counts = { menu: 0, rows: 0 };
-      const Row = memo(({ item, isSelected }: { item: PreparedItem; isSelected: boolean }) => {
-        counts.rows++;
-        return (
-          // biome-ignore lint/a11y/useAriaPropsSupportedByRole: `role="option"` comes from itemProps
-          <li {...item.itemProps} aria-selected={isSelected}>
-            {item.label}
-          </li>
-        );
-      });
-      const Menu = ({ config, groups, async }: typeof props) => {
-        counts.menu++;
-        const { list, listProps, menuProps, searchProps, selectedId } = useCommandMenu({
-          config,
-          groups,
-          asyncResultsGroup: async && { id: "r", label: "R", items: async },
-          onSearchChange: vi.fn(),
-        });
-        const row = (item: PreparedItem) => (
-          <Row key={item.id} item={item} isSelected={item.id === selectedId} />
-        );
-        return (
-          <div {...menuProps}>
-            <input {...searchProps} />
-            <ul {...listProps}>
-              {isGroupList(list)
-                ? list.map((g) => (
-                    <li key={g.id} role="presentation">
-                      {/* biome-ignore lint/a11y/useSemanticElements: a <fieldset> can't sit inside a listbox */}
-                      <ul role="group" aria-label={g.label}>
-                        {g.items.map(row)}
-                      </ul>
-                    </li>
-                  ))
-                : list.map(row)}
-            </ul>
-          </div>
-        );
-      };
-      const ui = render(<Menu {...props} />);
+    const renderCounted = (props: CountedProps) => {
+      counts.menu = 0;
+      counts.rows = 0;
+      const ui = render(<CountedMenu {...props} />);
       const reset = () => {
         counts.menu = 0;
         counts.rows = 0;
       };
-      return { counts, reset, ui, Menu, input: screen.getByRole("combobox") };
+      return { counts, reset, ui, Menu: CountedMenu, input: screen.getByRole("combobox") };
     };
 
     it("re-renders only the two rows whose highlight changes on arrow keys", () => {
@@ -1066,24 +1132,6 @@ describe("useCommandMenu", () => {
   });
 
   describe("DOM integration", () => {
-    const Menu = ({ config, extra }: { config: Config[]; extra?: React.ReactNode }) => {
-      const { list, listProps, menuProps, searchProps, selectedId } = useCommandMenu({ config });
-      return (
-        <div {...menuProps}>
-          <input {...searchProps} />
-          {extra}
-          <ul {...listProps}>
-            {list.map((item) => (
-              // biome-ignore lint/a11y/useAriaPropsSupportedByRole: `role="option"` comes from itemProps
-              <li key={item.id} {...item.itemProps} aria-selected={item.id === selectedId}>
-                {item.label}
-              </li>
-            ))}
-          </ul>
-        </div>
-      );
-    };
-
     const ROW = 40;
     const VIEW = 100;
 
@@ -1115,8 +1163,27 @@ describe("useCommandMenu", () => {
     const manyItems = () =>
       Array.from({ length: 8 }, (_, i) => createConfig({ id: `item ${i}`, label: `Item ${i}` }));
 
+    it("works under StrictMode's double renders and effects", () => {
+      render(
+        <StrictMode>
+          <DomMenu config={defaultConfig} />
+        </StrictMode>,
+      );
+      const input = screen.getByRole("combobox");
+
+      fireEvent.keyDown(input, { key: "ArrowDown" });
+      expect(input.getAttribute("aria-activedescendant")).toBe(
+        screen.getByRole("option", { name: "Paste" }).id,
+      );
+
+      fireEvent.change(input, { target: { value: "cu" } });
+      fireEvent.keyDown(input, { key: "Enter" });
+      expect(defaultConfig[2].onSelect).toHaveBeenCalledTimes(1);
+      expect(input).toHaveProperty("value", "");
+    });
+
     it("wires combobox, listbox and option ARIA attributes", () => {
-      render(<Menu config={defaultConfig} />);
+      render(<DomMenu config={defaultConfig} />);
 
       const input = screen.getByRole("combobox");
       const listbox = screen.getByRole("listbox");
@@ -1131,7 +1198,7 @@ describe("useCommandMenu", () => {
 
     it("gives options DOM ids that are unique and free of whitespace", () => {
       render(
-        <Menu
+        <DomMenu
           config={[
             createConfig({ id: "list", label: "List" }),
             createConfig({ id: "with space", label: "Spaced" }),
@@ -1153,7 +1220,7 @@ describe("useCommandMenu", () => {
     });
 
     it("keeps focus in the input when an item is pressed", () => {
-      render(<Menu config={defaultConfig} />);
+      render(<DomMenu config={defaultConfig} />);
 
       const notPrevented = fireEvent.mouseDown(screen.getAllByRole("option")[1]);
 
@@ -1163,7 +1230,7 @@ describe("useCommandMenu", () => {
     it("leaves keys pressed in other controls inside the menu alone", () => {
       const onClick = vi.fn();
       render(
-        <Menu
+        <DomMenu
           config={defaultConfig}
           extra={
             <button type="button" onClick={onClick}>
@@ -1188,7 +1255,7 @@ describe("useCommandMenu", () => {
       const original = Element.prototype.scrollIntoView;
       Element.prototype.scrollIntoView = scrollIntoView;
       try {
-        render(<Menu config={manyItems()} />);
+        render(<DomMenu config={manyItems()} />);
         const input = screen.getByRole("combobox");
         const scrollTop = mockLayout(screen.getByRole("listbox"));
 
@@ -1211,7 +1278,7 @@ describe("useCommandMenu", () => {
     });
 
     it("does not scroll on mount", () => {
-      render(<Menu config={manyItems()} />);
+      render(<DomMenu config={manyItems()} />);
       const scrollTop = mockLayout(screen.getByRole("listbox"));
 
       expect(scrollTop()).toBe(0);
@@ -1230,7 +1297,7 @@ describe("useCommandMenu", () => {
             ({ overflowY: (element as HTMLElement).style.overflowY }) as CSSStyleDeclaration,
         );
       try {
-        const { getByRole } = render(<Menu config={manyItems()} />, { container });
+        const { getByRole } = render(<DomMenu config={manyItems()} />, { container });
         const scrollTop = mockLayout(getByRole("listbox"));
 
         for (let i = 0; i < 3; i++) fireEvent.keyDown(getByRole("combobox"), { key: "ArrowDown" });

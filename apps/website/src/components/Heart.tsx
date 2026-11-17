@@ -1,5 +1,6 @@
-import { MotionConfig, motion, type Transition } from "framer-motion";
+import { m, type Transition } from "framer-motion";
 import type { FunctionComponent } from "react";
+import { MotionProvider } from "../utils/motion";
 
 const TIMES = [0.1, 0.15, 0.2, 0.25, 0.3, 0.45, 0.55, 1];
 
@@ -19,8 +20,8 @@ const TRANSITION: Transition = {
 // The same slow heartbeat as wojtekolek.com's footer: two beats, a fade, a
 // redraw, then a long rest.
 export const Heart: FunctionComponent = () => (
-  <MotionConfig reducedMotion="user">
-    <motion.svg
+  <MotionProvider>
+    <m.svg
       className="text-primary-300"
       aria-hidden="true"
       xmlns="http://www.w3.org/2000/svg"
@@ -36,12 +37,12 @@ export const Heart: FunctionComponent = () => (
       animate={{ opacity: BASE_ANIMATION, scale: SCALE_ANIMATION }}
       transition={TRANSITION}
     >
-      <motion.path
+      <m.path
         initial={{ pathLength: 1 }}
         animate={{ pathLength: BASE_ANIMATION }}
         transition={TRANSITION}
         d="M19 14c1.49-1.46 3-3.21 3-5.5A5.5 5.5 0 0 0 16.5 3c-1.76 0-3 .5-4.5 2-1.5-1.5-2.74-2-4.5-2A5.5 5.5 0 0 0 2 8.5c0 2.3 1.5 4.05 3 5.5l7 7Z"
       />
-    </motion.svg>
-  </MotionConfig>
+    </m.svg>
+  </MotionProvider>
 );

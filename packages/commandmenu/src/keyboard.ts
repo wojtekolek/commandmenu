@@ -15,13 +15,19 @@ export const buildShortcuts = <T extends Config>(items: Iterable<T>): Map<string
   return shortcuts;
 };
 
+/** A key that types a Latin letter or digit names its own shortcut; anything else may not. */
+const LATIN = /^[a-z0-9]$/i;
+
 /**
  * The item a Cmd/Ctrl key event triggers, if any. Tries the character the key types first
- * (follows the layout, so AZERTY's A is "A"), then the physical key (so "F" still works on a
- * Cyrillic layout, and "1" when Shift turns the key into "!").
+ * (follows the layout, so AZERTY's A is "A"), then, only when that character isn't a Latin
+ * letter or digit, the physical key (so "F" still works on a Cyrillic layout, and "1" when Shift
+ * turns the key into "!"). A Latin letter never falls back: AZERTY's Ctrl+A stays select-all
+ * rather than firing a "Q" shortcut.
  */
 export const matchShortcut = <T>(shortcuts: Map<string, T>, e: KeyboardEvent): T | undefined => {
   const prefix = e.shiftKey ? "⇧ " : "";
+  if (LATIN.test(e.key)) return shortcuts.get(prefix + e.key.toUpperCase());
   const typed = e.key.length === 1 ? shortcuts.get(prefix + e.key.toUpperCase()) : undefined;
   const physical = e.code.replace(/^(Key|Digit|Numpad)/, "").toUpperCase();
   return typed ?? (physical ? shortcuts.get(prefix + physical) : undefined);
